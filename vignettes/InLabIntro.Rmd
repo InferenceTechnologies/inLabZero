@@ -1,0 +1,249 @@
+---
+title: "inLabZero: Introduction"  
+output: rmarkdown::html_vignette 
+vignette: >
+  %\VignetteIndexEntry{inLabZero: Introduction}  
+  %\VignettePackage{inLabZero}
+  %\VignetteEngine{knitr::rmarkdown}   
+  %\VignetteEncoding{UTF-8} 
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.align="center",
+  fig.width=6, 
+  fig.height=6,
+  out.width="50%",
+  dpi=200,
+  tidy=FALSE
+)
+options(width=80)
+```
+
+_version: 2020/09_    
+
+
+***
+
+**_note_**: *This document looks into the inLabZero package introduction, as a part of the inLabZero package developed by Inference Technologies.* 
+            
+***
+
+
+## inLabZero package introduction      
+
+The **inLabZero package** was developed by Inference technologies for semiconductor data inference analysis and modelling. It was built with the aim to cover a wide extend of related topics, which can be divided into 5 main areas: _Exploratory data analysis_, _Clustering_, _Data integration_, _Modelling_ and _Visualization_:
+
+1. **_Exploratory data analysis (EDA)_** is an approach applied in statistics to analyze datasets and summarize their main characteristics. Understanding data is crucial in order to get best results. Inspection of raw data can reveal new insights  and bring ideas for preprocessing and handling of data for machine learning tasks.  EDA combines techniques that are graphical in nature with some quantitative techniques. 
+
+2. **_Clustering_** (or cluster analysis) divides data into groups, called _clusters_. Objects belonging to the same group are in a sense more similar to each other than objects present in other groups (clusters). Cluster analysis can be achieved by applying various algorithms, which use different approaches to cluster constitution, having also distinct efficacy in cluster detection.
+
+3. During the data analysis process, it is essential to be able to share data between different data layers (`pcy`, `wbm`, `leh`). In order to obtain needed variables from diverse layers, proper **_data integration_** needs to be ensured. The inLabZero package contains functions that sustain data integration.
+
+4. Supervised machine learning algorithms, which support both regression and classification predictive **_modelling_** problems, are integrated in the package: CART (Classification and regression trees), XGBoost (eXtreme Gradient Boosting), Random Forest.
+
+5. Data **_visualization_** refers to presenting data in a graphical form. It is a unique tool for assessing relationships between attributes, spotting outliers or potential issues, evaluation of model performance and can even provide an idea for possible data transformations that need to be applied. There is a great variety of visualization functions to choose from.
+
+To provide the user with a deeper understanding of the functions' usage during analysis, each of these areas is thoroughly described in a series of vignettes containing both theoretical background of the discussed topis, as well as practical examples and discussions. A complete list of available inLabZero vignettes is included in the second part of this vignette with active links to access the particular vignette. Vignettes can also be opened in the RStudio web interface under the inLabZero account. On top of the functions related to the topics above, the package comprises also several useful functions for manipulation with data, e.g. binding of columns (`cbind`), bin manipulation (`bin`),  renaming columns (`rename`), cropping of maps (`cropMap`), returning normalization tables (`normTable`), removing columns with `NAs` (`remColNA`) etc. The package contains a generated pdf help document with the documentation for every function. On top of the inLabZero specific functions, it is possible also to use standard `R` functions. 
+
+The inLabZero package is available for download on [Cran](https://cran.r-project.org).
+
+
+The following **topics related to the inLabZero package** are documented:     
+
+1. [inLabZero package: library, data and help ](#section1) 
+2. [inLabZero vignettes](#section2)
+
+<br>
+
+### 1. inLabZero package: library, data and help {#section1}
+
+
+The inLabZero package is loaded using the `library` call followed by the inLabZero package name in parenthesis, as follows:
+
+
+```{r}
+library(inLabZero)  
+```
+
+<br>
+
+#### Datasets
+
+inLabZero comprises three built-in datasets, so the examples used in the vignettes or help can be directly replicated by executing the provided code, once the datasets are properly loaded. 
+
+It contains the following datasets:
+
+
+```{r table1, echo=FALSE, message=FALSE, warnings=FALSE, results='asis'}
+tabl <- " 
+| Dataset name          | Description                   |
+|-----------------------|-------------------------------|
+| pcy                   | process control dataset       | 
+| wbm                   | wafer bin map dataset         |   
+| leh                   | lot equipment history dataset | 
+"
+cat(tabl) 
+```
+
+<br>
+
+The **process control dataset**, `pcy`, contains process control monitoring (PCM) parameters with integrated yield information from wafer bin maps (WBM), where one row corresponds to one test site.
+
+The **wafer bin map dataset**, `wbm`, contains wafer bin maps with passed and failed dice at probe testing, also known as wafer sort. One row of the `wbm` dataset, corresponds to one wafer.
+
+The **lot equipment history dataset**, `leh`, includes a complete history of equipment that was used at all process stages. One row of the `leh` dataset represents one lot.
+
+To load the particular datasets, use the `data` call followed by the dataset name in parenthesis:
+
+```{r}
+data(wbm) 
+data(pcy)
+data(leh)
+```
+
+<br>
+
+#### Loading and saving files during analysis  
+
+For the purpose of analysis, the ongoing work needs to be saved for later access. The inLabZero package contains two functions that can be used for this purpose: `loadData` and `saveData`. Help for these function can be called up using the procedure described in the next section.  
+
+<br>
+
+#### Help 
+
+Once the package is attached (via `library`), help pages for individual functions in the package can be accessed in `R` using the standard help command: `?`. Each help entry contains a title and a short description of the function's purpose, followed by the function's usage. Every argument is specified with a class and contains a comprehensive description of its meaning. The default value is marked, where applicable. Each help entry mentions also the output value of the particular function and contains a set of examples to demonstrate the function's usage.
+
+The following example will call up the help for the `rename` function: 
+
+```{r eval=FALSE}
+# Call up help for the 'rename' function
+?rename
+```
+
+From the description, we see that this function is used to rename variables (columns) returning
+a copy of the object of the same class (in this case a `semiTable` or `semiFrame` object). Now, we can study the example section and look at the first example: 
+
+
+```{r}
+data(pcy)
+     
+# Set the cluster name from "clear" to "clear2"
+pcy2 <- rename(pcy, "clear", "clear2")
+```
+
+Let's look at `pcy` dataset and the `pcy2` copy of the original dataset with the renamed column:
+
+```{r}
+pcy[,c("lotWafer", "clear", "center", "edge")]
+```
+
+```{r}
+pcy2[,c("lotWafer", "clear2", "center", "edge")]
+```
+
+The package contains also a generated pdf help document with the documentation for every function, which can be downloaded at [Cran](https://cran.r-project.org).
+
+
+<br>
+
+### inLabZero vignettes {#section2}
+
+The inLabZero package has been thoroughly documented via vignettes grouped into five main areas, as described in the introductory part of this vignette. 
+
+The particular vignettes are accessed by clicking on the vignette's name in the list below or using the RStudio web interface with the inLabZero account, as described in the next section:
+
+#### Vignettes List
+
+##### Introduction
+* [**inLabZero introduction**](InLabIntro.html)  
+
+##### Exploratory Data Analysis
+* [**Data understanding**](DataUnderstanding.html)
+* [**Yield characteristics**](YieldCharacteristics.html)
+* [**Yield decomposition**](YieldDecomposition.html)
+
+##### Clustering
+* [**Basic clustering**](BasicClustering.html)
+* [**Cluster manipulation**](ClusterManipulation.html)
+* [**Map browsing**](MapBrowsing.html)
+* [**Advanced clustering: PCA**](PCA.html)
+
+##### Data integration
+* [**Transfers in lot, wafer and site level data**](DataIntegration.html)
+
+##### Modelling
+* [**CART**](CART.html)
+* [**Random forest, Partial plot and Plotmo**](RandomForest.html)
+* [**eXtreme Gradient Boosting**](XGBoost.html)
+
+##### Visualization
+* [**xyPlot**](ScatterPlot.html)
+* [**timePlot**](TimePlot.html)
+* [**histPlot**](HistPlot.html)
+* [**sitePlot**](SitePlot.html)
+* [**boxPlot**](BoxPlot.html)
+* [**corPlot**](CorPlot.html)
+* [**binPlot**](BinPlot.html)
+* [**rocPlot**](ROCPlot.html)
+
+
+<br>
+
+#### Viewing inLabZero vignettes in RStudio  
+
+Vignettes can be viewed through the browser interface in RStudio after logging in to the inLabZero account. The _inLabZero vignette name_ needs to be used for the particular vignette of choice as the first argument surrounded by quotation marks in the example call below. The inLabZero vignettes' names are summarized below in the list.  
+
+To open a vignette, use the following call in the RStudio under the inLabZero account:
+
+```{r eval=FALSE}
+vignette("BasicClustering", package="inLabZero") 
+```
+
+<br>
+
+
+##### Introduction
+* InLabIntro 
+
+##### Exploratory Data Analysis
+* DataUnderstanding
+* YieldCharacteristics
+* YieldDecomposition
+
+##### Clustering
+* BasicClustering
+* ClusterManipulation
+* MapBrowsing
+* PCA
+
+##### Data integration
+* DataIntegration
+
+##### Modelling
+* CART
+* RandomForest
+* XGBoost
+
+##### Visualization
+* ScatterPlot
+* TimePlot
+* HistPlot
+* SitePlot
+* BoxPlot
+* CorPlot
+* BinPlot
+* ROCPlot
+
+
+
+
+
+
+
+
+
+
+

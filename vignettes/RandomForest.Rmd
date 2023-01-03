@@ -1,0 +1,334 @@
+---
+title: "inLabZero: Random forest"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{inLabZero: Random forest}
+  %\VignettePackage{inLabZero}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.align="center",
+  fig.width=6, 
+  fig.height=6,
+  out.width="50%",
+  dpi=200,
+  tidy=FALSE
+)
+options(width=80)
+```
+
+_version: 2020/03_ 
+
+
+***
+
+**_note_**: *This document looks into Random forest, as a part of the inLabZero package developed by Inference Technologies. For more information on the inLabZero package, please refer to: [inLabZero introduction vignette](InLabIntro.html)*       
+
+***
+
+
+## Random forest
+
+The model belongs to supervised machine learning algorithms, which is capable of performing both regression and classification tasks.   
+
+The Random forest model is made up of many decision trees. This model uses two key concepts that gives it the name random:
+
+* Random sampling of training data points when building trees
+* Random subsets of features considered when splitting nodes
+
+When training, each tree in a Random forest learns from a random sample of the data points. The samples are drawn with replacement, known as bootstrapping, which means that some samples will be used multiple times in a single tree. <br>
+The other main concept in the Random forest is that only a subset of all the features are considered for splitting each node in each decision tree. Generally this is set to square root of number of features for classification. 
+
+Predictions are made by averaging the predictions of each decision tree. This procedure of training each individual learner on different bootstrapped subsets of the data and then averaging the predictions is known as **bagging**, short for **bootstrap aggregating**. In averaging, each individual tree in the Random forest spits out a class prediction and the class with the most votes becomes our model’s prediction. This concept of voting is called majority voting. The forest chooses the classification having the most votes out of all the other trees in the forest. In the case of regression, it takes the average of the outputs by different trees. 
+
+Bagging is used to reduce the variance of single decision tree like CART to make more accurate predictions than any individual tree, which improves performance and stability. For more information on CART please refer to [Classification and Regression Trees vignette](CART.html).
+
+The advantage of Random forest is that it can handle large dataset with higher dimensionality and even handle missing values and maintain accuracy when a large proportion of data is missing. One of the disadvantages is the fact that while it is good at classification, it is not as good for regression problems, as it does not give precise continuous nature of predictions. An ensemble model is inherently less interpretable than an individual decision tree.  It can also be compared to a black box approach for statistical modelling: we have very little control over what the model does.
+
+
+In this vignette, the following inLabZero **topics related to Random forest** are documented:
+
+1. [Classification with response parameter `ProbeYield`](#CT_ProbeYield)
+2. [Classification with response parameter `cluster`](#CT_Cluster)
+3. [Regression with response parameter `ProbeYield`](#RT_ProbeYield)
+4. [Plotmo](#Plotmo)
+5. [Partial dependance plot](#partialPlot)
+
+
+<br>
+
+### 1. Classification: response parameter `ProbeYield` {#CT_ProbeYield} 
+
+In the first section, we will use Random forest to address a classification problem where the output variable is categorical - `ProbeYield`. 
+
+The function `model` (part of the inLabZero package) is used to perform regression and classification (*note*: it can also be used for clustering and dimensionality reduction). In the example below, we are calling the function on the process control dataset, `pcy`, and storing the model outcome to metadata of the `pcy` dataset. The type of the model is specified via the `type` parameter, equalling either to `class` (for classification models) or `reg` (for regression models). As we are currently dealing with a classification problem, the `type` parameter is set to `class`. The particular model is defined via the `model` function parameter. For Random forest, this parameter needs to be set to `forest`. Standard formula input is represented by the `formula` parameter. This characterizes the response parameter and the input parameters, in our case we choose the response parameter `ProbeYield` (also set as default).       
+
+ 
+```{r}
+library(inLabZero)  
+```
+
+```{r echo=FALSE}
+data(pcy)
+```
+
+```{r echo=FALSE}
+modelPlotPar(default)
+partialPlotPar(default)
+```
+
+The following call trains Random forest classification with response parameter `ProbeYield` and all input parameters. Throughout this vignette, we will use the same value for the `seed` parameter. 
+
+```{r results="hide"}
+# Train Random forest classification with response parameter `ProbeYield` 
+pcy <- model(pcy, type="class", model="forest", formula="ProbeYield ~ .", seed=42) 
+```
+
+In order to view the model outcome, the `modelPlot` function is applied on the `pcy` dataset which stores the model results. The parameter `first` specifies the first `n` most important parameters to display. In order to ease cluttered plots, we will show first 15 parameters. On the x-axis is the metric that represents the relative importance of each parameter. The `ProbeYield` Random forest model is seen below:  
+
+
+```{r}
+modelPlot(pcy, first=15, main="Random forest, ProbeYield, classification")
+```
+
+<br>
+
+By calling the `summary` function on the model output, we obtain a detailed model summary. The summary includes the accuracy of the train as well as the test set. However, since there is no train/test set split yet, the test data statistics are denoted as `NA`. 
+
+```{r}
+summary(pcy)
+```
+
+<br>
+
+### 2. Classification: response parameter `cluster` {#CT_Cluster}
+
+
+Next, let us move on to a classification problem,  where the response parameter is a particular cluster. The cluster name is specified via the `formula` parameter. 
+
+With the following call, we will train Random forest classification with response parameter cluster `center` and all input parameters: 
+
+```{r results="hide"}
+ # Train Random forest classification with response parameter cluster `center`
+pcyc <- model(pcy, type="class", model="forest", formula="center ~ .", seed=42) 
+```
+
+Using the `modelPlot` function, the Random forest model outcome is plotted:
+
+```{r}
+modelPlot(pcyc, first=15, main="Random forest, cluster, classification") 
+```
+
+ 
+ <br>
+
+#### Data balancing
+
+
+So far, we have been working with cluster `center` only, hence with values 1 and 0, representing either the presence or absence of cluster, respectively. The disadvantage of such a set is that it is highly disbalanced, which is caused by the fact that there are not enough patterns belonging to the positive cases, in our case cluster `center`, comparing to number of wafers w/o cluster `center`.  This can be regarded as a problem in learning from highly imbalanced datasets. 
+
+The `model` function has two parameters to address this problem. Parameter `balance` is used in binary classifications to balance positive and negative cases in the train set. The `balance` parameter defines the multiple of the number of positive cases to be sampled out of negative cases. By default these negative cases are sampled from all wafers except for cluster `center`. From this default negative cases group, a specific cluster could be selected, usually named as `clear`, that comprises all wafers w/o any cluster.  Parameter `balanceCol`  is then used to employ a custom group of wafers for negative case sampling, e.g. cluster `clear`. 
+
+In this example, we use the value of 2 to balance the train set and select cluster `clear` for negative case sampling. 
+
+```{r results="hide"}
+# Train Random forest classification on balanced data
+pcyb <- model(pcyc, type="class", model="forest", formula="center ~ .", balance=2,  
+                                                        balanceCol="clear", seed=42) 
+```
+
+In order to view Random forest model on balanced data, use:
+
+```{r}
+modelPlot(pcyb, first=15, main="Random forest, cluster, classification, balanced") 
+```
+
+<br>
+
+In our analysis, we are working with wafers in the `center` cluster and we are randomly sampling twice the amount of the wafers from the cluster `clear` for balancing. In case of repeating the balancing process, random sampling will vary. 
+
+To ensure that we work in next steps e.g. visualisation with the same wafers as in the model, we will store the selected wafers in the `usedRow` variable using the `modelTrainRow` function. This function gets data rows employed in the model training using the `model` function. Variable `usedRow` will now contain all the wafers with the `center` cluster and the samples from cluster `clear`. 
+
+
+```{r results="hide"}
+usedRow <- modelTrainRow(pcyb) 
+```
+
+
+<br>
+
+#### Train/test split 
+
+The model performance (and hence the model overfit) is evaluated on data that was not used for model training, denoted as  *test data*. The split ratio between train/test data of the whole dataset is represented by the `splitRatio` parameter.  A `splitRatio` of 0.7 signifies: 70 percent of the data will be used for training and 30 percent for testing. The default value for this parameter equals 1. The test set is used for unbiased evaluation of the model fit on the dataset, after the model is trained on the train set. 
+
+```{r results="hide"}
+# Train Random forest classification on balanced data with a defined 
+# 0.7/0.3 train/test data split
+pcys <- model(pcyc, type="class", model="forest", formula="center ~ .", 
+                                                  splitRatio=0.7, seed=42) 
+```
+
+The plot for the Random forest model with response parameter `cluster` and train/test split:
+
+```{r}
+modelPlot(pcys, first=15, main="Random forest, cluster, classification, split") 
+```
+
+<br>
+
+Similarly as in the previous sections, the `summary` function provides a detailed model summary.  The train/test set split has helped to compare the model performance on train and test data to see a potential model overfit.
+
+```{r}
+summary(pcys)
+```
+
+<br>
+
+### 3. Regression: response parameter `ProbeYield` {#RT_ProbeYield}
+
+Examples shown in the previous sections were dealing with classification tasks.  Random forest can also be used for regression tasks, though it does not give precise continuous nature of predictions. The regression model is defined via the `type` parameter, which needs to be set to `reg`. In the `formula` parameter, we are defining `ProbeYield` as the response parameter. 
+
+```{r results="hide"}
+# Train Random forest regression with response parameter `ProbeYield` 
+pcyr <- model(pcy, type="reg", model="forest", formula="ProbeYield ~ .", seed=42) 
+```
+To plot the regression model for `ProbeYield` response parameter, use:
+
+```{r}
+modelPlot(pcyr, first=15, main="Random forest, ProbeYield, regression") 
+``` 
+
+
+<br>
+
+#### Train/test split 
+
+As in the previous examples, the `splitRatio` parameter is set to define the ratio between the train and test set. A `splitRatio` of 0.7 means, that 70 percent of the data will be used for training, while 30 percent will be used for testing. 
+
+
+```{r results="hide"}
+# Train Random forest classification on non-balanced data with a defined 
+# 0.7/0.3 train/test data split
+pcyrs <- model(pcyc, type="reg", model="forest", formula="ProbeYield ~ .", 
+                                                    splitRatio=0.7, seed=42) 
+```
+
+Plotting the regression model for `ProbeYield` response parameter with train/test split:
+
+```{r}
+modelPlot(pcyrs, first=15, main="Random forest, ProbeYield, regression, split")  
+```
+
+<br>
+
+Finally, we are applying the `summary` function on the model output to get model specific summary. 
+
+```{r}
+summary(pcyrs)
+```
+
+<br>
+
+### 4. Plotmo {#Plotmo} 
+
+With the `plotmo` function, one can easily plot regression surfaces for a model, which is useful for understanding the model itself. We will look at plots for our Random forest classification on balanced data saved in `pcyb`. This function plots the model’s response when varying one or two predictors (out of variables `PARAM01`, `PARAM02`, etc.)  while holding the other predictors constant.
+
+A **degree1** plot describes the regression surface of a one variable model, while a **degree2** plot is used for the description of the regression surface of a two variable model.
+
+Set the `chart` parameter of the `modelPlot` function to `plotmo`. The default setting of the Plotmo chart shows both degree1 and degree2 types of plots in 4 x 4 grid.
+
+ 
+```{r results="hide"}
+modelPlot(pcyb, chart="plotmo")
+```
+
+<br>
+
+The use of degree1 and degree2 arguments also enables to select the set of variables that are displayed. 
+
+Parameter `degree1` is an index vector specifying main effect plots to include. The ten most important variables are depicted in the default Plotmo chart above. For plotting just the second plot, define `degree1=2`. It can also be a character vector specifying which variables to plot, e.g. `degree1=c("PARAM10","PARAM82")`. Variables’ names are matched with `grep`. Each degree1 chart is generated by plotting the predicted response as the variable changes. Variables that do not appear in the plot are called background variables. They are held fixed at their median values, where the medians are calculated from the training data. Note that `degree1`/`degree2` indexes are in title of each plot in default Plotmo chart. For no degree2 plots, use `degree2=FALSE` or `degree2=0`.
+
+
+```{r results="hide"}
+# Selected degree1 type plot
+modelPlot(pcyb, chart="plotmo", degree1=2, degree2=0) 
+```
+
+<br>
+
+Parameter `degree2` represents an index vector specifying interaction plots to include. Pairs of the four variables with the largest importance, hence 6 degree2 plots are shown in the default Plotmo chart above. We can specify a particular degree2 plot to visualize, e.g. to plot only the fifth plot, use `degree2=5`. Such a degree2 plot is created when plotting the predicted response as two variables are changed, while keeping all background variables fixed at their median values, as mentioned above.
+  
+
+```{r results="hide"}
+# Selected degree2 type plot 
+modelPlot(pcyb, chart="plotmo", degree1=0, degree2=5)   
+```
+
+<br>
+
+The limitation of this plot lies in the fact that these plots give only a partial view of the model, because each plot depicts only a small cut of the data, where the background variables are kept at fixed values. However, it is a handy visualization tool that can together with other tools provide priceless information for the analysis itself.
+
+<br>
+
+### 5. Partial dependance plot {#partialPlot} 
+
+The partial plot shows the partial dependence of the response either by using a model for averaging through the data or by sampling from the data after variable’s distribution adjustments. These two options are defined by the parameter `method`. 
+
+<br>
+
+#### Method `model`
+
+In the first example, we set the method parameter to `model`. After the Random forest model is trained, the partial dependence plot is created in the following steps:
+
+* Select `x` variable to be investigated, e.g. `PARAM10`.
+* The `x` variable range is identified by the `partialPlot` algorithm.
+* For each value in the `x` variable range specified by parameter `xInput`, the corresponding values of the other parameters are identified and these values are inserted in the model.
+* The model response is averaged for each value specified by the parameter `xInput` in the `x` variable range.
+* Because the response variable of our Random forest model is presence of the `center` cluster, then the average value of the model response for each value of `PARAM10` corresponds to a probability of the cluster occurrence.
+
+This means that previously trained Random forest model is used for averaging through the data at points defined by `xInput`. If single value of `xInput` is provided, the `x` variable’s range is divided by this number. By default, this value is set to 5. With the `numMain` parameter set to `FALSE`, the index of plotted column is not included in the main title.
+
+
+The below call can be used to plot the partial plot. Using `abline` function, a red vertical line is added to the graph at the value of 1750. It can be seen that for `PARAM10<1750`, the probability of cluster center presence rises. 
+
+
+
+```{r}
+# Partial dependence method="model", previously trained model is used for averaging 
+# through the data at points specified by `xInput`
+partialPlot(pcyb, PARAM10, method="model", xInput=30, numMain=F)
+abline(v=1750, col="red", lty=3) 
+```
+
+<br>
+
+#### Method `data`
+
+In the second example, we set the method parameter to `data`. The partial dependence plot is created in the following steps:
+
+* Select `x` variable to be investigated, e.g. `PARAM10`.
+* Set the `x` variable sequence in the parameter `xInput`.
+* Set the response variable, e.g. `ProbeYield`.
+* The adjusted `x` variable distribution is shifted so that the median value matches the selected xInput value and then the response variable is calculated for all `x` variables.
+* The response variable for all `x` variables is averaged for each value specified by parameter `xInput` in the `x` variable range.
+* Because the response variable in our example is set to `ProbeYield`, the average response value for each `PARAM10` value corresponds to `ProbeYield` and on the x-axis is the median of `PARAM10` adjusted distribution.
+
+It can happen that recent process capabilities are better than historical data show. Than we can adjust the distribution of `x` parameter by the factor `xNarrow`. For example if the spread of a recent distribution is `50%` percent of all data distribution, we set `xNarrow = 0.5`. 
+
+Using `abline` function, a green vertical line is added to the graph at the value of 1720 to point to an optimum `PARAM10` median setting.
+
+
+```{r}
+# Partial dependence method="data"
+# Yield estimates after PARAM10's distribution shifting and narrowing by 50%
+partialPlot(pcyb, PARAM10, y="ProbeYield",  method="data", xInput=seq(1500, 1900, 20), 
+                                                                xNarrow=0.5, numMain=F)
+abline(v=1720, col="green", lty=3)  
+```
+
+

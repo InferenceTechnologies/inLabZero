@@ -1,0 +1,373 @@
+---
+title: "inLabZero: Scatter plot"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{inLabZero: Scatter plot}
+  %\VignettePackage{inLabZero}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8} 
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.align="center",
+  fig.width=6, 
+  fig.height=6,
+  out.width="50%",
+  dpi=200,
+  tidy=FALSE
+)
+options(width=80) 
+```
+
+_version: 2020/04_  
+
+
+***
+
+**_note_**: *This document looks into Scatter plot, as a part of the inLabZero package developed by Inference Technologies. For more information on the inLabZero package, please refer to: [inLabZero introduction vignette](InLabIntro.html)*       
+
+***
+
+
+## Data visualization
+
+Data visualization refers to presenting data in a graphical form. It is a unique tool for assessing relationships between attributes, spotting outliers or potential issues, evaluation of model performance and can even provide an idea for possible data transformations that need to be applied.  
+
+In this vignette, the following inLabZero **topics related to xyPlot visualization** are documented:
+
+1. [Scatter plot - `xyPlot`](#section1) 
+2. [Scatter plot visual parameters - `xyPlotPar`](#section2) 
+
+
+<br>
+
+### 1. Scatter plot - `xyPlot` {#section1} 
+
+A **scatter plot** is used to plot two variables together, one on each of the `x` and `y` axes with points showing the interaction. The relationship between the attributes is represented by the spread of the points.
+
+A scatter plot is created using the inLabZero function `xyPlot`, where chart colors are based on `z` variable. The function can be applied on the process control dataset, `pcy` (corresponding to parameter `obj`). The parameters for plotting are specified either as variable indexes (*integer*) or as variable names (*character*). First variable specifies `x` axis. Second variable specifies `y` axis. Browsing mode is activated if multiple `y` axis variables are provided (for more information on browsing options, refer to [Map Browsing vignette](MapBrowsing.html)).
+
+
+
+<br>
+
+#### Specification of the input parameter for plotting
+
+Let us look on two different ways to specify parameters with the same result output. The first corresponds to the case, where the parameters to be plotted are specified via variable indexes (10th and 15th variable), while the second uses variable names for parameter specification (non-quoted strings can be used). 
+
+```{r}
+library(inLabZero)  
+```
+
+```{r echo=FALSE}
+data(pcy)
+```
+
+```{r echo=FALSE}
+xyPlotPar(default)
+modelPlotPar(default)
+```
+
+```{r}
+# Plot 10th vs 15th variable from the group
+xyPlot(pcy, 10, 15)
+```
+
+```{r}
+# Plot PARAM10 vs PARAM15
+xyPlot(pcy, PARAM10, PARAM15)
+```
+
+<br> 
+<br> 
+
+It is also possible to plot a sequence of variables. In this case browsing mode is entered. For help, type `h` during browsing. 
+
+For example (don't include the quotation marks):
+
+<ul>
+<li><strong>[enter]</strong>: next</li>
+<li><strong>"5"</strong>: go next 5 steps</li>
+<li><strong>"-"</strong>: go one step back</li>
+<li><strong>"-3"</strong>: go 3 steps back</li>
+<li><strong>"auto"</strong>: autobrowsing</li>
+<li><strong>"x"</strong>: exit</li>
+</ul>
+
+```{r eval=FALSE}
+# Various ways to input variables for plotting, first variable is used for x axis
+xyPlot(pcy, 10, c(26:30))
+xyPlot(pcy, 10, PARAM80:last)
+```
+
+<br>
+
+The next couple of examples are divided into two sections based on whether the `z`- axis is numerical or categorical along with the usage of several other `xyPlot` arguments selected based on the `z`- axis type.
+
+<br>
+
+#### `xyPlot` argument settings for numerical `z`- axis
+
+Paremeter **`z`** specifies the variable for the `z` axis. For a numerical `z`- axis, this variable can be broken into intervals. Subsets of variable corresponding to `z` variable breaks are then plotted with different colors. 
+
+<br>
+
+##### numMain
+
+Parameter **`numMain`** enables to include index of the plotted variable in the main title.
+
+```{r}
+# Select numerical z variable with input by name
+xyPlot(pcy, PARAM10, PARAM15, z="PCMYield", numMain=T)
+```
+
+<br> 
+
+##### zBr
+
+Parameter **`zBr`** breaks of a numeric `z` variable. Single integer value determines number of breaks. This parameter can also be specified as a vector and it can be numerical, character or POSIXct, then it represents interval breaking points. It is also possible to use special character values `min`, `mean`, `median` and `max`. 
+
+
+```{r}
+# Break numerical variables into intervals: keywords seq, min, max together with values
+xyPlot(pcy, PARAM10, PARAM15, z="PCMYield", zBr=c("min",seq(10,90,20),"max"), numMain=F) 
+```
+
+<br> 
+
+##### zBrMethod
+
+The **`zBrMethod`** parameter defines the split methods and it works in conjuction with the `zBr` setting. The following split methods can be used:
+**`median`** (breaks `z` variable with `median`), **`mean`** (breaks `z` variables with `mean`), **`thr`** (breaks `z` variable with threshold value specified by `zBr`), **`yieldHeat`** (corresponds to `zBr=c("seq(min,median,length.out=brValue)","max")`, where `brValue` is the value specified by `zBr`), **`linear`** (breaks `z` variable into equidistant intervals; number of splits is given by `zBr`), **`hist`** (breaks `z` variable using graphic’s hist function; values are passed to hist’s breaks parameter using `zBr`). The following call assigns the `hist` function as the `zBrMethod`: 
+
+```{r}
+# Plot PARAM10 vs PARAM15 with 'hist' function as the zBrMethod 
+xyPlot(pcy, PARAM10, PARAM15, z="PARAM02", zBr=10, zBrMethod="hist", numMain=F) 
+```
+
+<br> 
+
+##### zOutlier
+
+Parameter **`zOutlier`** is an adaptation of the `outlier` parameter for outliers filtering of the `z` variable before plotting. For more details on this parameter, refer to the `outlier` description below. 
+
+
+```{r}
+# Plot PARAM10 vs PARAM15 with outlier filtering option
+xyPlot(pcy, PARAM10, PARAM15, z="PARAM02", zBr=10, zOutlier=2, numMain=F) 
+```
+
+<br>
+
+#### `xyPlot` argument settings for categorical `z`- axis
+
+Categorical `z`- axis can be broken into intervals using the **`zLevel`** parameter (*note*: In order to *include all levels*, use special value `zLevel="all"`, as depicted in the second example below). Subsets of variable corresponding to `z` variable breaks are then plotted with different colors. For a categorical `z`- axis, the `zLevel` parameter is non-null. It specifies which categories
+to use for split. 
+
+```{r}
+# Select categorical z variable with input by name
+xyPlot(pcy, PARAM10, PARAM15, z="center", zLevel=c(0,1), numMain=F)
+```
+
+<br>
+
+##### main
+
+The main title can be added via the **`main`** parameter.
+
+
+```{r}
+# Select categorical z variable with input by name 
+xyPlot(pcy, PARAM10, PARAM15, z="center", zLevel="all", 
+                  main="Center pattern generated at low PARAM10")
+```
+<br>
+
+##### showLegend
+
+To disable the displaying of the legend, set the **`showLegend`** parameter to `FALSE` (note: visual output not shown).  
+
+```{r eval=FALSE}
+# Disable the displaying of the legend
+xyPlot(pcy, PARAM10, PARAM15, z="center", zLevel="all", showLegend=F)
+```
+
+<br> 
+
+##### outlier
+
+An important part of data analysis consists in outlier filtering. Parameter `outlier` is applied for filtering of variable before plotting. Outliers are data points outside the interval: `<(Q1 - kl * IQR), (Q3 + kr * IQR)>`, where `Q1` and `Q3` are quartiles, `IQR` is interquartile range and `k1` and `k2` are values specified by outlier parameter as its first and second element. If single value is provided, `k1` = `k2` setting is used. No outlier filtering is applied by default.     
+
+```{r}
+# Select categorical z variable with input by name for all levels, outlier filtering
+xyPlot(pcy, PARAM10, PARAM15, z="center", zLevel="all", outlier=3, showLegend=F)
+```
+<br> 
+
+##### linFit
+
+Now, if we want to add a *linear fit* to the chart, parameter **`linFit`** needs to be set to `TRUE`. 
+
+
+```{r}
+# Add linear fit line
+xyPlot(pcy, PARAM37, PARAM39, z="center", zLevel="all", linFit=T, numMain=F)
+```
+
+<br>  
+
+##### xLim, yLim
+
+There is also an option to set the *`x` and `y` axis limits* via the **`xLim`** and **`yLim`** parameters, respectively. They represent a vector with two elements corresponding to the minimum and the maximum value of the axis. The following call shows an example of the user defined axis limits:
+
+
+```{r}
+# User defined x and y axis limits
+xyPlot(pcy, PARAM37, PARAM39, z="center", zLevel="all", xLim=c(8.45,9), 
+                                      yLim=c(1.00e-4,1.08e-4), numMain=F)
+```
+
+<br> 
+
+##### yLog
+
+Setting **`yLog`** to `TRUE` will change the `y` axis to *logarithmic scale*.
+
+
+```{r}
+# Set y axis to logarithmic scale
+xyPlot(pcy, PARAM10, PARAM40, z="center", zLevel="all", yLog=T, numMain=F)
+```
+
+<br>
+
+#### Combining plots
+
+To *combine multiple plots into one overall graph* we can use the `R` language function **`par()`** and include the option **`mfrow=c(nrows, ncols)`** to create a matrix of `nrows` x `ncols` plots that are filled in by row. 
+ 
+
+```{r}
+# 4 figures arranged in 2 rows and 2 columns
+par(mfrow=c(2,2))
+xyPlot(pcy, PARAM30, PARAM34, z="center", zLevel="all", numMain=F)
+xyPlot(pcy, PARAM10, PARAM15, z="center", zLevel=c(0,1), numMain=F)
+xyPlot(pcy, PARAM10, PARAM40, z="center", zLevel=c(0,1), numMain=F)
+xyPlot(pcy, PARAM37, PARAM39, z="center", zLevel="all", linFit=T, numMain=F)
+```
+
+<br>
+
+#### Visualization of the model output
+
+The scatter plot is a great tool to visualize the results of models like CART. In a scenario where the number of observations belonging to one class is significantly lower than observations belonging to other class, balancing with the parameters `balance` and `balanceCol`is used, for more details see the [CART vignette](CART.html).  
+
+In this example, we use the value of 2 to balance the train set and select cluster `clear` for negative case sampling.  
+
+```{r results="hide"}
+ # Train CART classification on balanced data
+pcyb <- model(pcy, type="class", model="cart", formula="center ~ .", cp=0.07, balance=2, 
+                                                              balanceCol="clear", seed=42) 
+```
+
+Model visualizations with the use of the `modelPlot` function:
+
+```{r}
+modelPlot(pcyb, varlen=0, main="CART, cluster, clasification, prune, balanced", extra=108) 
+``` 
+
+<br> 
+
+In our analysis, we are working with wafers in the `center` cluster and we are randomly sampling twice the amount of the wafers from the cluster `clear` for balancing. In case of repeating the balancing process, random sampling will vary. 
+
+To ensure that we use for the scatter plot same balanced data as for the model, we will store the selected wafers in the `usedRow` variable using the `modelTrainRow` function. The `usedRow` variable will now contain all the wafers with the `center` cluster and samples from the cluster `clear`.  
+
+```{r}
+usedRow <- modelTrainRow(pcyb)
+```
+
+
+Since we have stored all the wafers in the `center` cluster and samples from cluster `clear` in the `usedRow` variable, the `xyPlot` can be called on `pcyb[usedRow]` subset so that only the data used in the model is displayed. The CART limits are added using `abline` function. A red vertical line at the value of 1720 and a horizontal line at the value of 19.  
+
+ 
+
+```{r}
+ # Select categorical z variable with input by name for all levels
+xyPlot(pcyb[usedRow], PARAM10, PARAM15, z="center", zLevel="all", numMain=F)
+# add red vertical line
+abline(v=1720, col="red", lty=3)  
+# add red horizontal line 
+abline(h=19, col="red", lty=3)
+```
+
+
+<br>
+
+### 2. Scatter plot visual parameters - `xyPlotPar` {#section2}  
+
+The **`xyPlotPar`** function enables to get, set and reload default visual parameters of the `xyPlot`. For a detailed list of all parameters that are available, see `?xyPlotPar`. Use parameter names to get values, use assignment to set parameter values and use keyword `default` to load default values. Let us look at some of the most used parameters and their usage. In order to see the effect on the `xyPlot`, the `xyPlotPar` needs to be run before the `xyPlot` is plotted. 
+
+<br>
+
+##### legend.cex
+
+To get the value of a visual parameter, in our case the number of significant digits, use: 
+
+```{r}
+ # Get number of significant digits
+xyPlotPar(legend.cex)
+```
+
+<br>
+
+##### legend.pos
+
+The *legend position* is accessible via the **`legend.pos`** parameter. In the call below, the legend position is set to bottom right: 
+
+```{r}
+# Set legend position to bottom right     
+xyPlotPar(legend.pos="bottomright")
+xyPlot(pcy, PARAM10, PARAM15, z="center", zLevel=c(0,1), numMain=F) 
+```
+
+<br> 
+
+##### colors.zLevel
+
+*Color scheme* for categorical variables can be tuned via the **`colors.zLevel`** parameter. Please refer to [color palette](https://colorbrewer2.org/#type=qualitative&scheme=Set3&n=12) for more details on color specification.  
+
+```{r}
+# Set color scheme to user defined values
+xyPlotPar(colors.zLevel=c("#8dd3c7","#fdb462"))
+xyPlot(pcy, PARAM10, PARAM15, z="center", zLevel=c(0,1), numMain=F) 
+```
+
+```{r echo=FALSE}
+xyPlotPar(default)
+```
+
+<br> 
+
+##### linFit.color, linFit.lwd
+
+Parameter **linFit.color** represents the setting of the *color of linear fit line*, while the **`linFit.lwd`** corresponds to its width.  
+
+```{r}
+# Set the color and width of the linear fit line
+xyPlotPar(linFit.color=c("#d9d9d9"), linFit.lwd=3)
+xyPlot(pcy, PARAM37, PARAM39, z="center", zLevel="all", linFit=T, numMain=F)
+```
+
+<br>
+
+In case that we have changed the visual parameters and we want to reload the default settings, the following call can be applied: 
+
+```{r}
+# Reload default visual parameters
+xyPlotPar(default) 
+```
+
+
+

@@ -1,0 +1,219 @@
+---
+title: "inLabZero: Site plot"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{inLabZero: Site plot}
+  %\VignettePackage{inLabZero}
+  %\VignetteEngine{knitr::rmarkdown} 
+  %\VignetteEncoding{UTF-8}   
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set( 
+  collapse = TRUE,
+  comment = "#>",
+  fig.align="center",
+  fig.width=6, 
+  fig.height=6,
+  out.width="50%",
+  dpi=200,
+  tidy=FALSE
+)
+options(width=80)   
+```
+
+_version: 2020/05_     
+
+
+***
+
+**_note_**: *This document looks into Site plot, as a part of the inLabZero package developed by Inference Technologies. For more  information on the inLabZero package, please refer to: [inLabZero introduction vignette](InLabIntro.html)*               
+ 
+***
+
+
+## Data visualization        
+
+Data visualization refers to presenting data in a graphical form. It is a unique tool for assessing relationships between attributes, spotting outliers or potential issues, evaluation of model performance and can even provide an idea for possible data transformations that need to be applied.  
+
+In this vignette, the following inLabZero **topics related to Site plot visualization** are documented:  
+
+1. [Site plot - `sitePlot`](#section1) 
+2. [Site plot visual parameters - `sitePlotPar`](#section2)   
+
+
+<br>
+
+### 1. Site plot - `sitePlot` {#section1}  
+
+The function plots parameters' distribution centers (like `median`, `mean` etc.) per site.  Darkest neighborhood color corresponds to highest parameter center value. It is a useful tool for visualizing the uniformity of parameters across a wafer.
+
+A site plot is created using the inLabZero function `sitePlot`. The function can be applied on the process control dataset, `pcy` (corresponding to parameter `obj`). The parameters for plotting are specified either as variable indexes (*integer*) or as variable names (*character*).   
+
+<br>
+
+#### Specification of the input parameter for plotting  
+
+Let us look on two different ways to specify parameters with the same result output (1 graph will be shown for demonstration). The first corresponds to the case, where the parameters to be plotted are specified via a *variable index* (11th variable median per site), the second uses a *variable name* for parameter specification (non-quoted strings can be used).  
+
+```{r}
+library(inLabZero)  
+```
+
+```{r echo=FALSE}
+data(pcy)
+```
+
+```{r echo=FALSE}
+sitePlotPar(default)
+```
+
+```{r eval=FALSE}
+# Plot 11th variable median per site
+sitePlot(pcy, 11)
+```
+
+```{r}
+# Plot PARAM11 median per site
+sitePlot(pcy, PARAM11)
+```
+
+<br> 
+<br> 
+
+It is also possible to plot a sequence of variables. The two examples below demonstrate possible input options. In this case browsing mode is entered. For help, type `h` during browsing. 
+
+For example (don't include the quotation marks):
+
+<ul>
+<li><strong>[enter]</strong>: next</li>
+<li><strong>"5"</strong>: go next 5 steps</li>
+<li><strong>"-"</strong>: go one step back</li>
+<li><strong>"-3"</strong>: go 3 steps back</li>
+<li><strong>"auto"</strong>: autobrowsing</li>
+<li><strong>"x"</strong>: exit</li>
+</ul>
+
+```{r eval=FALSE}
+# Plotting a sequence of variables
+sitePlot(pcy, c(1:11))
+```
+
+```{r eval=FALSE}
+# Plotting a sequence of variables
+sitePlot(pcy, PARAM80:last)
+```
+
+<br>
+
+##### fun
+
+As mentioned above, this type of chart plots parameters' distribution centers per site. The applied centering function is by default `median`. It is possible to use other centering functions, e.g. `mean`, `sd`. The following call demonstrates how to set the centering function to `mean`:
+
+```{r}
+# Plot PCMYield mean
+sitePlot(pcy, PCMYield, fun="mean")
+```
+
+<br>
+
+##### main
+
+The main title can be added via the **`main`** parameter.
+
+```{r}
+# Add graph title
+sitePlot(pcy, PCMYield, main="PCMYield uniformity")
+```
+
+<br>
+
+##### numMain
+
+Parameter **`numMain`** enables to include/exclude index of the plotted variable in the main title. It is set to `TRUE` by default, the parameter index is excluded in this example.
+
+```{r}
+# Plot 11th variable median per site
+sitePlot(pcy, 11, numMain=F)  
+```
+
+<br>
+
+#####  color
+
+The color mode of the site plot can be adjusted via the **`color`** parameter. By default, this parameter is set to `heat` (heatmap color scheme), where darkest neighborhood color corresponds to highest parameter center value.  
+
+```{r}
+# Plot 11th variable median per site with default heatmap color scheme 
+sitePlot(pcy, 11, color="heat", numMain=F)
+```
+
+<br>
+
+To use one color for all adjacent rectangles, set the parameter equal to `single`. 
+
+```{r}
+# Plot siteid per site with single color scheme
+sitePlot(pcy, siteid, color="single") 
+```
+
+
+<br>
+
+### 2. Site plot visual parameters - `sitePlotPar` {#section2}  
+
+The **`sitePlotPar`** function enables to get, set and reload default visual parameters of the `sitePlot`. For a detailed list of all parameters that are available, see `?sitePlotPar`. Use parameter names to get values, use assignment to set parameter values and use keyword `default` to load default values. Let us look at some of the most used parameters and their usage. In order to see the effect on the `sitePlot`, the `sitePlotPar` needs to be run before the `sitePlot` is plotted. 
+
+
+<br>
+
+##### text.signif
+
+To get the value of a visual parameter, in our case number of significant digits, use: 
+
+```{r}
+# Get number of significant digits
+sitePlotPar(text.signif)
+```
+
+In case that we want to change the default setting and set the number of significant digits to 5, the following call can be applied:
+
+```{r}
+# Set number of significant digits to 5     
+sitePlotPar(text.signif=5)
+sitePlot(pcy, 11, numMain=F)
+```
+
+```{r echo=FALSE}
+sitePlotPar(default)
+```
+
+<br> 
+
+##### text.cex
+
+ The **`text.cex`** parameter defines text magnification (by default is set to 1.5).  
+
+```{r}
+# Set text magnification to 1.7
+sitePlotPar(text.cex=1.7)
+sitePlot(pcy, 11, numMain=F)
+```
+
+```{r echo=FALSE}
+sitePlotPar(default) 
+```
+
+
+<br> 
+
+In case that we have changed the visual parameters and we want to reload the default settings, the following call can be applied: 
+
+```{r}
+# Reload default visual parameters
+sitePlotPar(default) 
+```
+
+
+
+

@@ -1,0 +1,242 @@
+---
+title: "inLabZero: Cluster Manipulation"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{inLabZero: Cluster Manipulation}
+  %\VignettePackage{inLabZero}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.align="center",
+  fig.width=6, 
+  fig.height=6,
+  out.width="50%",
+  dpi=200,
+  tidy=FALSE
+)
+options(width=80)
+```
+
+_version: 2020/01_ 
+
+
+***
+
+**_note_**: *This document looks into cluster manipulation, as a part of the inLabZero package developed by Inference
+Technologies. For more information on the inLabZero package, please refer to: [inLabZero introduction vignette](InLabIntro.html)*
+
+***
+
+
+## Cluster Manipulation 
+
+Clustering (or cluster analysis) divides data into groups, called  **clusters**. Objects belonging to the same group are
+in a sense more similar to each other than objects present in other groups (clusters). Cluster analysis can be achieved
+by applying various algorithms, which use different approaches to cluster constitution, having also distinct efficacy in
+cluster detection. Introduction into Cluster Analysis with a description of the K-means algorithm can be found in
+[Basic Clustering vignette](BasicClustering.html). 
+
+**Cluster manipulation** is an important part of the analysis. There are several possibilities how to manipulate with clusters: creation of new clusters, removing of existing clusters, moving/coping of specific wafers, lots or wafers belonging to a certain cluster to another cluster. 
+
+During the analysis, when a certain wafer matches a pattern corresponding to a particular cluster, we can move this
+wafer to the particular cluster. The source cluster is specified by the parameter `from` and the target cluster is
+defined by the parameter `to`.
+
+
+The logical parameter `add` of the `cluster` function enables moving or copying of selected wafers, lots or wafers from
+a defined cluster into a cluster of choice. If `TRUE`, the selected group will be added (without alteration) to the
+specified cluster. If `FALSE`, the selected group will be moved to the specified cluster and removed from the original
+cluster. This parameter is set to `FALSE` by default.
+
+<br>
+
+### Example dataset 
+
+During the cluster manipulation process, we will apply the cluster function to the wafer bin map dataset, `wbm`.
+However, for the purposes of this vignette, we will show only a subset of the result output with columns relevant to the
+topic e.g. the `lotWafer` parameter and the particular clusters that will be manipulated.
+
+```{r}
+library(inLabZero)
+```
+  
+```{r echo=FALSE}
+data(wbm)
+```
+
+```{r echo=FALSE}
+# Subsetting only columns of interest for clarity
+wbm <- wbm$tab[,c("lotWafer", "clear", "center", "edge")]
+```
+
+```{r}
+wbm
+``` 
+
+```{r echo=FALSE}
+data(wbm)
+```
+
+<br>
+
+### Moving wafers to a particular cluster
+
+
+We will at first demonstrate moving of all wafers belonging to a specific cluster to a different cluster. Since the
+`add` parameter is by default `FALSE`, it is not necessary to specify it.
+
+With the call below, we will move all wafers from cluster `clear` to cluster `myClust`, that will be created.
+
+```{r results="hide"}
+# Move all wafers from cluster 'clear' to cluster 'myClust'
+moveWafers <- cluster(wbm, from=clear, to=myClust)
+``` 
+
+```{r echo=FALSE, results="hide"}
+# Subsetting only columns of interest for clarity
+moveWafers  <- moveWafers$tab[,c("lotWafer", "clear", "center", "edge", "myClust")]
+```
+```{r}
+moveWafers
+```
+
+If we want to refine our selection and go to the wafer level, moving a particular wafer is also possible with the use of
+the `lotWafer` parameter, which combines the information on the lot number and wafer number.
+
+Let us move wafer number 8 from lot `LOT005` to cluster `center`.   
+
+```{r results="hide"}
+
+# Move wafer #8 from lot LOT005 to cluster center
+moveWafer <- cluster(wbm, lotWafer=="LOT005-W08", to=center)
+```
+
+```{r echo=FALSE}
+moveWafer  <- moveWafer$tab[,c("lotWafer", "clear", "center", "edge")]
+```
+
+```{r}
+moveWafer
+```
+
+<br>
+
+### Adding wafers and lots to a particular cluster 
+
+In case we want to add wafers and lots to a particular cluster, we need to set the `add` parameter to `TRUE`. 
+
+There are various possibilities of choosing the source to be added or moved. The example below shows how to add all
+wafers from cluster `edge` to cluster `myClust`. In contrast to moving of wafers, there will not be any alteration to
+the `edge` cluster. The newly created cluster, `myClust`, represents a copy of the cluster `edge`. 
+
+```{r results="hide"}
+# Add all wafers from cluster 'edge' to cluster 'myClust' 
+addWafers <- cluster(wbm, from=edge, to=myClust, add=TRUE)
+```
+
+```{r echo=FALSE}
+addWafers  <- addWafers$tab[,c("lotWafer", "clear", "center", "edge", "myClust")]
+```
+
+```{r}
+addWafers
+```
+
+Now, instead of adding all wafers, we can also add particular lots to a specified cluster. As an example, we add lot
+`LOT005` to cluster `clear`.  
+
+
+```{r results="hide"}
+# Add lot LOT005 to cluster clear
+addLot <- cluster(wbm, lot=="LOT005", to=clear, add=TRUE)
+```
+
+```{r echo=FALSE}
+addLot  <- addLot$tab[,c("lotWafer", "clear", "center", "edge")]
+```
+
+```{r}
+addLot
+```
+
+
+<br>
+
+### Creating a new cluster
+
+The creation of a new cluster represents the analogy of adding wafers, lots or wafers belonging to a certain cluster to
+a new user defined cluster. Since this corresponds to the action of 'adding', similarly as above, we need to specify the
+`add` parameter as `TRUE`. 
+
+In the first example, we create a new cluster with the name `newClust`, which will include the wafers from `LOT005`.  
+
+```{r results="hide"}
+# Create a new cluster, include lot LOT005
+createCluster <- cluster(wbm, lot=="LOT005", to=newClust, add=TRUE)
+``` 
+
+```{r echo=FALSE}
+createCluster  <- createCluster$tab[,c("lotWafer", "clear", "center", "edge", "newClust")]
+```
+
+```{r}
+createCluster
+```
+
+The second example shows how we can define also various conditions to specify the level of data that we want to work
+with. New cluster, `newClust2` will include data for only `part=PART1` with the probe End Date before `2016-03-05`. For
+this particular example, we will include in the subset also `part` and `probeEndDate` information. As we can see,
+although rows 1, 2 and 4 also correspond to `PART1`, the `probeEndDate` occured after `2016-03-05` and hence these do not
+meet the condition and as a result, they are not added to `newClust2`. 
+
+```{r results="hide"}
+# Create a new cluster, include data only for `PART1` with probeEndDate before 5th March 2016
+createCluster2 <- cluster(wbm, part=="PART1" & probeEndDate < "2016-03-05", 
+                                                      to=newClust2, add=TRUE)
+``` 
+
+```{r echo=FALSE}
+createCluster2  <- createCluster2$tab[,c("lotWafer", "part", "probeEndDate", 
+                                      "clear", "center", "edge", "newClust2")]
+```
+
+```{r}
+createCluster2
+```
+
+<br> 
+
+### Remove a specific cluster
+
+If we want to remove a certain cluster (e.g. one that was used temporarily during the analysis), we can specify the
+cluster name for removal in the `remove` parameter of the function.
+
+```{r echo=FALSE, results="hide"}
+createCluster <- cluster(wbm, lot=="LOT005" & probeEndDate<"2016-03-05", 
+                                                    to=newClust, add=TRUE)
+```
+
+```{r results="hide"}
+# Remove cluster edge
+removeCluster <- cluster(createCluster, remove="newClust")
+```
+
+```{r echo=FALSE}
+removeCluster  <- removeCluster$tab[,c("lotWafer", "clear", "center", "edge")]
+```
+
+```{r}
+removeCluster
+```
+
+
+
+
+
+
+

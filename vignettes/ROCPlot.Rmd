@@ -1,0 +1,130 @@
+---
+title: "inLabZero: ROC plot"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{inLabZero: ROC plot}
+  %\VignettePackage{inLabZero}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}  
+---
+
+```{r, include = FALSE} 
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.align="center",
+  fig.width=6, 
+  fig.height=6,
+  out.width="50%",
+  dpi=200,
+  tidy=FALSE
+)
+options(width=80) 
+```
+
+_version: 2020/07_  
+
+
+***
+
+**_note_**: *This document looks into ROC plot, as a part of the inLabZero package developed by Inference Technologies. For more  information on the inLabZero package, please refer to: [inLabZero introduction vignette](InLabIntro.html)*            
+ 
+***
+
+
+## Data visualization 
+
+Data visualization refers to presenting data in a graphical form. It is a unique tool for assessing relationships between attributes, spotting outliers or potential issues, evaluation of model performance and can even provide an idea for possible data transformations that need to be applied.  
+
+In this vignette, the **ROC curve model visualization** is documented.
+
+<br>
+
+### ROC plot 
+
+The **ROC** (receiver operating characteristic) **curve** is a commonly used method to visualize the performance of a binary classifier. It tells how much the model is capable of distinguishing between classes. It is created by plotting the *true positive rate (TPR)* on the y-axis against the *false positive rate (FPR)* on the x-axis for every possible classification threshold.  The area under the ROC curve (AUC) represents degree or measure of separability. The higher the AUC, the better the model is at distinguishing between positive and negative classes. For example between wafers with or without a specific cluster. When AUC is 0.8, it means that there is 80% chance that the model will be able to distinguish between the positive class and the negative class. 
+
+When distributions of positive and negative classes overlap, we introduce type 1 and type 2 error. Depending on the threshold, we can minimize or maximize them. When we increase the threshold, we get a higher ratio of negative samples (e.g. wafers without a cluster) that are incorrectly classified, and a higher ratio of positive samples (e.g. wafers with a cluster) that are correctly classified.
+
+The ROC curve is created using the inLabZero function `rocPlot` applied on the process control dataset holding the model output, `pcy` (corresponding to parameter `obj`). The y-axis on the right represents the color scheme for the threshold. 
+
+
+<br>
+
+#### Random forest model generation
+
+The following call trains Random forest classification with response parameter `ProbeYield` and all input parameters. We will store the result in the `pcy` variable for later use. The choice of model is not limited to Random forest, which was chosen for the purpose of this vignette.
+
+```{r}
+library(inLabZero)  
+```
+
+```{r echo=FALSE}
+data(pcy)
+```
+
+```{r results="hide"}
+pcy <- model(pcy, type="class", model="forest", splitRatio=0.8, modelFormula="ProbeYield~.", 
+                                                                                      seed=42)
+```  
+
+
+<br>
+
+#### ROC curve for train data
+
+In order to plot the ROC curve for the model outcome, the `rocPlot` function is applied on the `pcy` dataset which stores the model results. Parameter `chart` specifies whether *train* or *test* data are used for the ROC curve creation. By default, the train data are displayed, so the following call can be used:
+
+
+```{r}
+# ROC curve for train data
+rocPlot(pcy)
+```
+
+
+<br> 
+
+#### ROC curve for test data 
+
+To use *test data*, set the `chart` parameter to `test`, as follows:
+
+```{r}
+ # ROC curve for test data
+rocPlot(pcy, chart="test")
+```
+
+
+<br> 
+
+#### modelThr
+
+Specified threshold can be labeled using the `modelThr` parameter. Choosing a classification threshold will depend on whether we want to minimize the false positive rate or to maximize true positive rate. In the example below, we are setting model threshold of 0.5 for labeling. 
+
+```{r}
+# Test data used, model threshold 0.5 labeled 
+rocPlot(pcy, chart="test", modelThr=0.5)
+# Add horizontal line
+abline(h=0.872, col="gray", lty=3)  
+# Add vertical line
+abline(v=0.117, col="gray", lty=3)  
+```  
+
+
+<br>
+
+#### main
+
+The main title can be added via the **`main`** parameter.
+
+```{r }
+# Add graph title
+rocPlot(pcy, main="rocPlot")
+```
+
+
+
+
+
+
+
+

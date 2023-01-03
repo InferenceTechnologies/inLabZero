@@ -1,0 +1,491 @@
+---
+title: "inLabZero: Data Understanding"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{inLabZero: Data Understanding}
+  %\VignettePackage{inLabZero}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.align="center",
+  fig.width=6, 
+  fig.height=6,
+  out.width="50%",
+  dpi=200,
+  tidy=FALSE
+)
+options(width=80)
+```
+
+_version: 2020/08_ 
+
+
+***
+
+**_note_**: *This document looks into data understanding, as a part of the inLabZero package developed by Inference
+Technologies. For more information on the inLabZero package, please refer to: [inLabZero introduction vignette](InLabIntro.html)*      
+
+***
+
+
+## Data understanding
+
+**Data understanding** constitutes a part of *Exploratory data analysis (EDA)*, which is an approach applied in statistics to analyze datasets and summarize their main characteristics.  Understanding data is crucial in order to get best results. Inspection of raw data can reveal new insights  and bring ideas for preprocessing and handling of data for machine learning tasks.  EDA combines techniques that are graphical in nature with some quantitative techniques. A dataset’s structure and properties are defined by several characteristics. These include the number and types of the attributes or variables and various statistical quantities that are applicable to them (i.e. median, mean, standard deviation). Inspecting the datasets thoroughly is therefore essential. 
+
+In this vignette, the following inLabZero **topics related to Data understanding** are documented:  
+
+1. [Datasets](#section1) 
+2. [Descriptive statistics and statistical graphics](#section2)
+3. [Getting specific information](#section3)
+
+
+<br>
+
+### 1. Datasets {#section1}
+
+The inLabZero package contains the following datasets:
+
+
+```{r table1, echo=FALSE, message=FALSE, warnings=FALSE, results='asis'}
+tabl <- " 
+| Dataset name          | Description                   |
+|-----------------------|-------------------------------|
+| pcy                   | process control dataset       | 
+| wbm                   | wafer bin map dataset         |   
+| leh                   | lot equipment history dataset | 
+"
+cat(tabl) 
+```
+
+<br>
+
+#### Process control dataset - `pcy`
+
+
+The process control dataset, `pcy`, contains process control monitoring (PCM) parameters with integrated yield information from wafer bin maps (WBM), where one row corresponds to one test site. It is a `semiTable` object, which extends (adds some attributes) to the `tableList` object. The `tableList` class wraps `data.table` class and other structures together, while preserving the `data.table` behaviour (for more information on the tableMatrix package, please refer to [TableMatrix vignette](https://github.com/InferenceTechnologies/tableMatrix)). 
+
+We can look at the structure of the `pcy` object, using the `names` function:
+
+
+```{r}
+library(inLabZero)  
+```
+
+```{r echo=FALSE}
+data(pcy)
+data(wbm)
+data(leh)
+```
+
+```{r}
+# Get structure of the 'pcy' dataset
+names(pcy)
+```
+
+<br>
+
+The `pcy` object has the following structure:
+
+* `tab` - containing `data.table` with data
+* `aid` - containing aid structures
+
+
+Each dataset consists of particular groups of variables, called data types. The list of an object's data types is accessed via the `dataType` function, which is part of the inLabZero package. 
+
+
+```{r echo=FALSE}
+corPlotPar(default) 
+```
+
+```{r}
+# Get groups of variables present in the `pcy` dataset
+dataType(pcy)
+```
+
+<br>
+
+The process control dataset, `pcy`, consists of the groups of variables shown in the table below. It comprises *cluster variables*, *PCM parameters*, *meta parameters* and *yield variables*. 
+
+
+```{r table2, echo=FALSE, message=FALSE, warnings=FALSE, results='asis'}
+tabl <- " 
+| List acronym             | Groups of variables' description     |
+|--------------------------|--------------------------------------|
+| C                        | Cluster variables                    | 
+| Y                        | Yield variables                      |   
+| META                     | Meta parameters                      |
+| PC                       | PCM parameters                       |  
+"
+cat(tabl) 
+```
+
+
+<br>
+
+#### Wafer bin map dataset - `wbm`
+
+The wafer bin map dataset, `wbm`, contains wafer bin maps with passed and failed dice at probe testing, also known as wafer sort. One row of the `wbm` dataset, corresponds to one wafer. It is a `semiFrame` object, which extends to the `tableMatrix` object. The `tableMatrix` class is more complex than `tableList` as it combines strengths of `data.table` and `matrix`. It stores the meta data as a `data.table` and main data as a `matrix` (for more information on the tableMatrix package, please refer to [TableMatrix vignette](https://github.com/InferenceTechnologies/tableMatrix)).
+
+Let us look at its structure: 
+
+```{r}
+# Get structure of the 'wbm' dataset
+names(wbm)
+```
+
+In case of the `wbm` object, we get the following structure:
+
+* `tab` - containing `data.table` with meta data
+* `mat` - containing `matrix` with main data
+* `matDim` - stores dimensions of the main data
+* `aid` - containing aid structures
+
+
+First set of columns of varying types is intended as meta data, second set of columns of the same type is intended as main data. `tableMatrix` stores meta data as a `data.table` and main data as a `matrix`. It also keeps track of dimensions of main data, thus allowing to combine rows of varying lengths into one object. As in `tableList`, `tableMatrix` can carry any additional aid data.
+
+The wafer bin map dataset, `wbm`, is made up of the following data types: *yield variables*, *meta parameters*, *lot equipment history parameters* (at probe) and *cluster variables*. 
+
+```{r}
+# Get groups of variables present in the `wbm` dataset
+dataType(wbm)
+```
+
+<br>
+
+For an overview on groups of variables, please refer to the following table.
+
+
+```{r table3, echo=FALSE, message=FALSE, warnings=FALSE, results='asis'}
+tabl <- " 
+| List acronym             | Groups of variables' description              |
+|--------------------------|-----------------------------------------------|
+| Y                        | Yield variables                               | 
+| META                     | Meta parameters                               |   
+| LEH                      | Lot equipment history parameters (at probe)   |
+| C                        | Cluster variables                             |  
+"
+cat(tabl) 
+```
+
+<br>
+
+#### Lot equipment history dataset - `leh`
+
+The lot equipment history dataset includes a complete history of equipment that was used at all process stages. One row of the `leh` dataset represents one lot. It is a `semiTable` object, which extends to the `tableList` object. For more information on the tableMatrix package, please refer to [TableMatrix vignette](https://github.com/InferenceTechnologies/tableMatrix). 
+
+Analogously, we can look at the structure of the `leh` object using the `names` function:
+
+```{r}
+# Get structure of the 'leh' dataset
+names(leh)
+```
+
+Similarly to the `pcy` object, the structure of the `leh` dataset is as follows:
+
+* `tab` - containing `data.table` with data
+* `aid` - containing aid structures
+
+
+The lot equipment history dataset, `leh`, is made up of the following data types: *meta parameters* and *lot equipment history parameters*. 
+
+```{r}
+# Get groups of variables present in the `leh` dataset
+dataType(leh)
+```
+
+<br>
+
+Tabular summary of the groups of variables for `leh` dataset:
+
+
+```{r table4, echo=FALSE, message=FALSE, warnings=FALSE, results='asis'}
+tabl <- " 
+| List acronym             | Groups of variables' description     |
+|--------------------------|--------------------------------------| 
+| META                     | Meta parameters                      |
+| LEH                      | Lot equipment history parameters     |  
+"
+cat(tabl) 
+```
+
+
+
+<br> 
+
+#### Accessing data
+
+To view the content of the datasets, call the name of the dataset. For demonstration purposes, we will show only the first three PCM parameters (out of the 91 parameters).  
+
+To view the **process control dataset**, use:  
+
+```{r eval=FALSE}
+# View process control dataset (with subset of PCM parameters)
+pcy
+```
+
+```{r echo=FALSE}
+# Subsetting only columns of interest for clarity
+pcy2 <- pcy$tab[,c("lotWaferSiteid", "lotWafer", "lot", "wafer", "siteid", "diexy", "diex", "diey", "part", "pcStartDate", "technology", "maskset", "UPYield", "ProbeYield",  "PCMYield", "ProbeYieldSys", "ProbeYieldRnd", "PARAM01", "PARAM02", "PARAM03")]
+pcy2
+```
+
+<br>
+
+Similarly, accessing the **wafer bin map dataset**:
+
+```{r}
+# View wafer bin map dataset
+wbm
+```
+<br>
+
+Finally, to show the content of the **lot equipment history** dataset:
+
+```{r eval=FALSE}
+# View lot equipment history dataset (with subset of stages)
+leh
+```
+
+<br>
+
+The `leh` dataset contains 196 stages. For demonstration purposes of this vignette, we will show only 3 stages out of the 196 stages available. 
+
+```{r echo=FALSE}
+# Subsetting only columns of interest for clarity
+leh2 <- leh$tab[,c("lot", "part", "lehStartDate", "technology", "maskset", "STAGE001", "STAGE002", "STAGE003")]
+leh2
+```
+
+
+<br> 
+
+#### Checking dataset size
+
+Having a good grasp of the dataset size is of great importance. The `R` function `unique` eliminates duplicate elements. Thus, when applied on the `pcy` dataset and the `lot` data column, we will obtain the unique names of all lots present in this data column. The `R` function `length` returns the length of a vector. To get the number of lots present in the dataset, we use the `length` function   and apply it on the expression `unique(pcy[,lot])`.
+
+```{r}
+# Get number of lots present in the 'pcy' dataset
+length(unique(pcy[,lot]))
+```
+
+<br>
+
+Similarly, for the `lotWafer` parameter:   
+
+```{r}
+# Get number of wafers present in the 'pcy' dataset
+length(unique(pcy[,lotWafer]))
+```
+
+<br>
+
+The number of rows in the particular datasets is accessible via the `R` function `nrow`. Examples below demonstrate its usage on the `wbm` and `leh` dataset for checking the number of rows present in the particular datasets, where 1 row in `wbm` dataset refers to 1 wafer and 1 row in `leh` dataset specifies 1 lot.
+
+
+```{r}
+# Get number of rows in the `wbm` dataset
+nrow(wbm)
+```
+
+```{r}
+# Get number of rows in the `leh` dataset
+nrow(leh)
+```
+
+<br>
+
+To get the number of lots present in the `wbm` dataset, use:
+
+```{r}  
+# Get number of lots in the `wbm` dataset
+length(unique(wbm[,lot]))
+```
+
+
+
+<br>
+
+### 2. Descriptive statistics and statistical graphics {#section2} 
+
+To understand data related to a particular problem under investigation, descriptive statistics need to be run against the data columns that become variables in the model. These statistics include mainly: `median`, `mean`, `sd` (standard deviation) and `summary`. 
+
+To get the median value for `PARAM10` variable from the `pcy` dataset, use:
+
+```{r}
+# Get median for 'PARAM10' variable
+median(pcy[,PARAM10])
+```
+
+<br>
+
+The mean value of `PARAM10` can be accessed via: 
+
+```{r}
+# Get mean for 'PARAM10' variable
+mean(pcy[,PARAM10])
+```
+
+<br>
+
+Analogously, using the `sd` function applied on the data column `PARAM10` of the `pcy` dataset, we will obtain the standard deviation for this variable. 
+
+```{r}
+# Get standard deviation for 'PARAM10' variable
+sd(pcy[,PARAM10])
+```
+
+<br>
+
+The inLabZero package contains the function `summary`, which produces various model summaries, depending on the argument. First part of the `summary` function output summarizes cluster names with corresponding number of wafers. Second part of the `summary` function output depicts a table with columns representing particular bins. `bin0` refers to passed dice, other bins stand for rejects at particular tests. First row designates the summary for all wafers and the subsequent rows show specific clusters. Calling this function on the wafer bin map dataset, `wbm`, will show cluster membership summary together with particular bin values. 
+
+```{r}
+# View summary of wafer bin map
+summary(wbm)
+```
+
+
+<br>
+
+#### Correlation plot 
+
+
+Correlations represent a very useful statistical analysis tool, as they indicate a predictive relationship between two random variables. The inLabZero `corPlot` function is used to visualize correlation in a **correlation plot**. Depending on the setting of its parameters, we can either plot a correlation matrix or a correlation dendrogram. 
+
+For more information on the inLabZero package, please refer to: [Correlation plot vignette](CorPlot.html). 
+
+<br> 
+
+##### Correlation matrix
+
+Using the `corPlot` function with the default setting for the chart parameter or setting its value to `mat`, the correlation matrix is plotted. The following call plots the correlation matrix for all parameters:
+
+```{r}
+# Plot correlation matrix
+corPlot(pcy)  
+```
+
+<br>
+<br>
+
+In order to ease the clutter of the correlation matrix above, it is possible to define the range of parameters to be displayed, where the parameters to be plotted are specified via a range of variable indices (9th - 30th variable):
+
+
+```{r}
+# Plot correlation matrix for 9th to 30th parameter
+corPlot(pcy, 9:30)
+```
+
+
+<br> 
+
+##### Correlation dendrogram
+
+To view the correlation dendrogram, the chart parameter needs to be set to `dend`.
+
+```{r}
+# Plot correlation dendrogram
+corPlot(pcy, chart="dend")
+```
+
+<br>
+<br>
+
+As in the case of correlation matrix, we can select a specific range of parameters to be displayed:
+
+```{r}
+# Plot correlation dendrogram for 9th to 30th parameter
+corPlot(pcy, 9:30, chart="dend")
+```
+
+
+<br>
+
+### 3. Getting specific information {#section3}
+
+There are useful `R` and inLabZero functions that are applicable for accessing specific information of the datasets. Let us look at a few. Similarly as in the section above, using the `unique` function, we will obtain the unique names of all parts  present in this column. 
+
+```{r}
+# Get part names
+unique(wbm[, part])
+```
+
+<br>
+
+The `table` function tabulates one factor or builds a contingency table from multiple factors. 
+
+Hence, the following call counts the level of one factor, `part`. We will obtain the counts of the particular factors, in our case, counts of `PART1`, `PART2` and `PART3`, which corresponds to number of wafers for each part. 
+
+```{r}
+# Get counts for specific part names
+table(wbm[,part])
+```
+
+<br>
+
+Using this function, we can also create a contingency table (cross-tabulations). Each cell in this table counts how many times the particular row-column combination occurred:
+
+```{r}
+# Create cross-tabulations for 'part' and 'wafer'
+table(wbm[,part], wbm[,wafer])
+```
+
+
+<br>
+
+#### Regular expressions 
+
+Wide range of R regular expression search algorithm (a pattern that is matched against a subject string from left to right) make it easy to further select the data we will work with. For example, if we want to get all the lot numbers that start with  `LOT02`, we can apply the following:
+
+```{r}
+# Create a subset with lots starting with strings 'LOT02'
+pcySub <- pcy[grep("LOT02",lot)]
+```
+
+<br>
+
+Now we can list this subset from the `lot` variable starting with `lot02`:
+
+```{r}
+# Get names of lots starting with strings 'LOT02'
+unique(pcySub[, lot])
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

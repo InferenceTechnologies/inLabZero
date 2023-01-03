@@ -1,0 +1,358 @@
+---
+title: "inLabZero: Correlation plot"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{inLabZero: Correlation plot}
+  %\VignettePackage{inLabZero}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}  
+---
+
+```{r, include = FALSE} 
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.align="center",
+  fig.width=6, 
+  fig.height=6,
+  out.width="50%",
+  dpi=200,
+  tidy=FALSE
+)
+options(width=80) 
+```
+
+_version: 2020/07_  
+
+
+***
+
+**_note_**: *This document looks into Correlation plot, as a part of the inLabZero package developed by Inference Technologies. For more  information on the inLabZero package, please refer to: [inLabZero introduction vignette](InLabIntro.html)*           
+ 
+***
+
+
+## Data visualization 
+
+Data visualization refers to presenting data in a graphical form. It is a unique tool for assessing relationships between attributes, spotting outliers or potential issues, evaluation of model performance and can even provide an idea for possible data transformations that need to be applied.  
+
+In this vignette, the following inLabZero **topics related to Correlation plot visualization** are documented:
+
+1. [Correlation plot - `corPlot`](#section1) 
+2. [Correlation plot visual parameters - `corPlotPar`](#section2) 
+
+
+<br>
+
+### 1. Correlation plot - `corPlot` {#section1} 
+
+
+The **correlation plot** is created using the inLabZero function `corPlot` applied on the process control dataset, `pcy` (corresponding to parameter `obj`). The parameters for plotting are specified either as variable indexes (*integer*) or as variable names (*character*). The `corPlot` function plots two types of charts: a correlation matrix or a dendrogram, depending on the setting of the `chart` parameter. 
+
+Correlations constitute a very useful statistical analysis tool, as they indicate a predictive relationship between two random variables. A **correlation matrix** is a table showing correlation coefficients between sets of variables, where each random variable in the table is correlated with each of the other values in the table. Like this, it is possible to identify which variables have highest correlation. Correlation matrices are used to summarize data and represent a diagnostic tool for advanced statistical analyses.
+
+A **dendrogram** is a tree-like diagram, which illustrates the arrangement of clusters produced by the corresponding analyses. It visually represents compound correlation data, where the particular compounds are arranged along the bottom part of the dendrogram and denoted as leaf nodes. Compound clusters are created by joining the individual compounds with the join point (referred to as a node). Each such node has a left and right sub-branch of clustered compounds. The y-axis of the dendrogram corresponds to the distance (`D`) between compound clusters and it is calculated as `1 - C`, where `C` represents the correlation between compound clusters. Thus, for highly correlated compounds with a correlation value of 1, the distance measure will have a value close to zero.  
+
+
+<br>
+
+<br>
+
+#### Correlation matrix and parameter options
+
+
+Using the `corPlot` function with the default setting for the `chart` parameter or setting its value to `mat`, the correlation matrix is plotted. The following call plots the correlation matrix for all parameters. 
+
+```{r}
+library(inLabZero)  
+```
+
+```{r echo=FALSE}
+data(pcy)
+```
+
+```{r echo=FALSE}
+corPlotPar(default) 
+```
+
+```{r}
+# Plot correlation matrix
+corPlot(pcy, chart="mat") 
+```
+<br>
+
+<br> 
+
+In order to ease the clutter of the correlation matrix above, it is possible to define the range of parameters to be displayed. The example below shows the selection of 9th to 30th parameter. There are two different ways to specify parameters with the same result output (1 graph will be shown for demonstration). The first corresponds to the case, where the parameters to be plotted are specified via a range of *variable indices* (9th - 30th variable), the second uses a *variable name* for parameter specification (non-quoted strings can be used).
+
+```{r}
+# Plot correlation matrix for 9th to 30th parameter
+corPlot(pcy, 9:30)
+```
+
+<br> 
+
+
+```{r eval=FALSE}
+# Plot correlation matrix for 9th to 30th parameter
+corPlot(pcy, PARAM09:PARAM30)
+```
+
+
+<br>
+
+###### matOrder
+
+ **`matOrder`** specifies the ordering method applied on the parameters of the correlation matrix. There are several options:
+
+* **`hclust`** - hierarchical clustering order (default). 
+
+* **`original`** - original order.
+
+* **`AOE`** - angular order of the eigenvectors. 
+
+* **`FPC`** - first principal component order.
+
+* **`alphabet`** - alphabetical order.  
+
+```{r}
+# Plot correlation matrix with original ordering method 
+corPlot(pcy, 9:30, matOrder="original")
+```
+
+<br>
+
+###### matLimit
+
+Parameter **`matLimit`** defines the threshold for absolute values of correlations that will be shown. In our example, only correlations above the absolute value of 0.3 will be displayed in the matrix. 
+
+```{r}
+# Plot correlation matrix with a defined correlation limit 
+corPlot(pcy, 9:30, matLimit=0.3)
+```
+
+<br>
+
+###### matMethod
+
+There are several supported visualization methods for the correlations, which can be set via the **`matMethod`** parameter. These include: `circle`, `square`, `ellipse`, `number`, `pie`, `shade` and `color` (default setting).
+
+```{r}
+# Plot correlation matrix with correlations visualized as circles
+corPlot(pcy, 9:30, matMethod="circle")
+```
+
+<br>
+
+###### matType
+
+The correlation matrix can be visualized either as a full matrix, lower triangular or upper triangular matrix. Set the parameter **`matType`** to `full`, `lower` or `upper`, respectively. 
+
+```{r}
+# Plot upper correlation matrix
+corPlot(pcy, 9:30, matType="upper")
+```
+<br>
+
+<br>
+
+*note: parameters that were described in this section are relevant only for correlation matrix* 
+
+<br>
+
+<br>
+
+#### Dendogram and parameter options
+
+The second way of correlation plot visualization represents the dendrogram. In order to view the dendrogram, the `chart` parameter needs to be set to `dend`. 
+
+
+```{r}
+# Plot dendrogram
+corPlot(pcy, chart="dend")   
+```
+
+<br>
+
+<br>
+
+
+As in the case of correlation matrix, we can select a specific range of parameters for showing:
+
+```{r}
+# Plot dendrogram for 9th to 30th parameter
+corPlot(pcy, 9:30, chart="dend")
+```
+
+<br>
+
+###### dendThr
+
+Parameter **`dendThr`** specifies threshold for the grouping rectangles. Parameter correlations above the limit defined by `dendThr` can be highlighted with red rectangles. The example below sets the threshold to 0.4.
+
+```{r}
+# Plot dendrogram with a defined threshold for red boxes
+corPlot(pcy, 9:30, chart="dend", dendThr=0.4)
+```
+
+<br>
+
+###### hclustLinkage
+
+Parameter **`hclustLinkage`** is related to the hierarchical clustering algorithm and the particular agglomeration method applied in the process of dendrogram creation. These methods differ in the way how distance between clusters is calculated. There are several methods to choose from:
+
+* **Complete linkage clustering** - the distance between clusters is defined as the distance between their two farthest members (lowest correlation). Set parameter to `complete` or leave this parameter unassigned due to default setting. 
+
+* **Single linkage clustering** - the distance between clusters is defined as the distance between their two closest members (highest correlation). Set parameter to `single`.
+
+* **Ward's minimum variance method** - The total within-cluster variance is minimized. At each step, the pair of clusters with minimum between-cluster distance is merged. Set parameter to `ward.D` or `ward.D2`.
+
+* **Average linkage clustering** - All pairwise dissimilarities are computed between the elements in cluster 1 and the elements in cluster 2, the average of these dissimilarities is considered as the distance between the two clusters. Set parameter to `average`.
+
+* **McQuitty linkage clustering** - The average of the cluster’s distances is taken, not considering the number of points in that cluster. Set parameter to `mcquitty`.
+
+For demonstration, we will show the complete and single linkage clustering.
+
+
+```{r}
+# Plot dendrogram with complete linkage clustering
+corPlot(pcy, 9:30, chart="dend",  hclustLinkage="complete")
+```
+
+<br>
+
+```{r}
+# Plot dendrogram with single linkage clustering
+corPlot(pcy, 9:30, chart="dend",  hclustLinkage="single")
+```
+
+<br>
+
+<br>
+
+
+*note: parameters that were described in this section are relevant only for dendrogram*
+
+<br>
+
+<br>
+
+#### Common parameter options for correlation matrix and dendrogram
+
+
+
+###### addYield
+
+Parameter **`addYield`** specifies yield column to add. By default, `ProbeYield` is selected. 
+
+```{r}
+# Plot correlation matrix with 'UPYield' added
+corPlot(pcy, 9:30, addYield="UPYield")
+```
+
+<br>
+
+```{r}
+# Plot correlation matrix without the specification of the yield column to add
+corPlot(pcy, 9:30, addYield=NULL)
+```
+
+<br>
+
+##### main
+
+
+The main title can be added via the **`main`** parameter.
+
+```{r}
+# Add graph title
+corPlot(pcy,9:30 , main="Correlation Matrix Including Probe Yield")
+```
+
+<br>
+
+<br>
+
+### 2. Correlation plot visual parameters - `corPlotPar` {#section2}  
+
+The **`corPlotPar`** function enables to get, set and reload default visual parameters of the `corPlot`. For a detailed list of all parameters that are available, see `?corPlotPar`. Use parameter names to get values, use assignment to set parameter values and use keyword `default` to load default values. Let us look at some of the most used parameters and their usage. In order to see the effect on the `corPlot`, the `corPlotPar` needs to be run before the `corPlot` is plotted. 
+
+<br> 
+
+<br> 
+
+#### Correlation matrix visual parameters
+
+
+##### mat.mar
+
+To get the value of a visual parameter, in our case, the value of the chart margin, use: 
+
+```{r}
+# Get value of the correlation matrix margin
+corPlotPar(mat.mar)
+```
+
+<br>
+
+##### mat.tl.cex
+
+The **`mat.tl.cex`** parameter defines text magnification. In the call below, text magnification is set to 0.7: 
+
+```{r}
+# Set text magnification of the correlation matrix to 0.7     
+corPlotPar(mat.tl.cex=0.7)
+corPlot(pcy, 9:30)
+```
+
+```{r echo=FALSE}
+corPlotPar(default)
+```
+
+<br> 
+
+
+<br> 
+
+#### Dendogram visual parameters 
+
+
+
+##### dend.cex
+
+For dendrogram, text magnification can be set via the **`dend.cex`** parameter. 
+
+```{r}
+# Set text magnification of the dendrogram to 0.8    
+corPlotPar(dend.cex=0.8)
+corPlot(pcy, 9:30)
+```
+
+```{r echo=FALSE}
+corPlotPar(default) 
+```
+
+<br>
+
+##### dend.thrColor
+
+The **`dend.thrColor`** parameter enables to change the color of grouping rectangles.
+
+```{r}
+# Set the color of grouping rectangles to blue
+corPlotPar(dend.thrColor="blue")
+corPlot(pcy, 9:30, chart="dend")
+```
+
+<br> 
+
+In case that we have changed the visual parameters and we want to reload the default settings, the following call can be applied: 
+
+```{r}
+# Reload default visual parameters
+corPlotPar(default) 
+```
+
+
+
+

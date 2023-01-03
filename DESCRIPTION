@@ -1,0 +1,56 @@
+Package: inLabZero
+Title: Semiconductor Data Inference and Modeling
+Version: 1.0.0
+Authors@R: person("Inference Technologies", email = "mail@inferencetech.com", role = c("aut", "cre", "cph"))
+Author: Inference Technologies [aut, cre]
+Maintainer: Inference Technologies <mail@inferencetech.com>
+Description: Semiconductor data inference and modeling.
+Depends:
+    R (>= 4.0.0)
+License: Proprietary
+LazyData: true
+Imports:
+    cfgAppR,
+    tableMatrix,
+    data.table,
+    raster,
+    RColorBrewer,
+    xts,
+    XML,
+    caTools,
+    rpart,
+    rpart.plot,
+    ROCR,
+    caret,
+    kernlab,
+    randomForest,
+    plotmo,
+    corrplot,
+    boot,
+    e1071,
+    class,
+    doMC,
+    foreach,
+    nnet,
+    dbscan,
+    gbm,
+    xgboost,
+    magrittr,
+    digest,
+    DT
+RoxygenNote: 7.1.1
+Encoding: UTF-8
+Collate:
+    'aaa.R'
+    'semiFrame.R'
+    'sfLoad.R'
+    'sfGraphics.R'
+    'sfModel.R'
+    'sfTools.R'
+    'sfUtils.R'
+    'zzz.R'
+Suggests: 
+    testthat,
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr

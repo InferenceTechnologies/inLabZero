@@ -1,0 +1,231 @@
+---
+title: "inLabZero: eXtreme Gradient Boosting"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{inLabZero: eXtreme Gradient Boosting}
+  %\VignettePackage{inLabZero}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.align="center",
+  fig.width=6, 
+  fig.height=6,
+  out.width="50%",
+  dpi=200,
+  tidy=FALSE
+)
+options(width=80)
+```
+
+_version: 2020/03_ 
+
+
+***
+
+**_note_**: *This document looks into eXtreme Gradient Boosting, as a part of the inLabZero package developed by Inference Technologies. For more information on the inLabZero package, please refer to: [inLabZero introduction vignette](InLabIntro.html)*      
+
+***
+
+
+## eXtreme Gradient Boosting 
+
+XGBoost (*e**X**treme **G**radient **Boost**ing*) model belongs to supervised machine learning algorithms, which supports both regression and classification predictive modeling problems.   
+
+The gradient boosted trees method is an ensemble learning method that combines a large number of decision trees ([CART vignette](CART.html)), to produce the final prediction. Compared to Random Forest algorithm ([Random forest vignette](RandomForest.html)), the XGBoost algorithm differs in the order the trees are built and the way the results are combined. The XGBoost model also uses *random sampling with replacement*, however this time the sampling is done *over weighted data*. 
+
+The gradient boosting is a **sequential ensemble method** that is known as **boosting algorithm**. This algorithm creates a sequence of models (one at a time) such that these models attempt to correct the mistakes of the models before them in the sequence. The first model is built on training data, the second model improves the first model, the third model improves the second, and so on. The boosting algorithm assigns **weights** to the inputs based on whether they were correctly classified or not (wrongly classified inputs have higher weights). In each step, weights are updated, a rule is made and fit to a subsample of data. After the iterations have been completed, we combine “weak rules” to form one “strong rule”, which will then be used as our model. The name gradient boosting is related to the fact that it uses a *gradient descent algorithm to minimize the loss* when adding new models.
+
+Given the sequential manner of tree building, gradient boosting has a good **bias-variance trade-off**. The loss of the ensemble is reduced by fitting a new tree to the negative gradient of the loss function. With every new added tree, the model complexity rises and the overall bias decreases.   
+
+The XGBoost has *great efficiency* related to its capacity to perform parallel computing. The user can tune model’s performance with parameters `max_depth` and `nrounds`. To control over-fitting, the XGBoost make splits upto the `max_depth` specified and then start pruning the splits with no positive gain. The `nrounds` parameter defines the number of trees which is equivalent to the number of iterations. Missing data is handled through embedded methods. The performance of the trained model on the test set can be checked with built-in metrics.
+An ensemble model is inherently less interpretable than an individual decision tree.
+
+In this vignette, the following inLabZero **topics related to eXtreme Gradient Boosting** are documented:
+
+1. [Classification with response parameter `ProbeYield`](#CT_ProbeYield)
+2. [Classification with response parameter `cluster`](#CT_Cluster)
+3. [Regression with response parameter `ProbeYield`](#RT_ProbeYield)
+
+<br>
+
+### 1. Classification: response parameter `ProbeYield` {#CT_ProbeYield} 
+
+In the first part of this vignette, we will use XGBoost to address a classification problem where the output variable is categorical - `ProbeYield`. 
+
+The inLabZero package contains the function `model`, which is used to perform regression and classification (*note*: it can also be used for clustering and dimensionality reduction). In the example below, we are calling the function on the process control dataset, `pcy`, and storing the model outcome to metadata of the `pcy` dataset. The type of the model is specified via the `type` parameter. This equals either to `class` (for classification models) or `reg` (for regression models). Since we are handling a classification problem, the `type` parameter is set to `class`. The particular model is defined via the `model` function parameter. For eXtreme Gradient Boosting, this parameter needs to be set to `xboost`. Standard formula input is represented by the `formula` parameter. This characterizes the response parameter and the input parameters. In our case we choose the response parameter `ProbeYield` (default option) and `"."` represents all input parameters. The `nrounds` parameter defines the number of trees which is equivalent to the number of iterations. The `max_depth` parameter defines the maximum depth of a tree. Increasing this value will make the model more complex and more likely to overfit. Using these two parameters,  we are able to tune the model's performance.
+
+
+```{r}
+library(inLabZero)  
+```
+
+```{r echo=FALSE}
+data(pcy)
+```
+
+```{r echo=FALSE}
+modelPlotPar(default)
+```
+
+In order to train the eXtreme Gradient Boosting classification with response parameter `ProbeYield` together with all input parameters, use:
+
+```{r results="hide"}
+# Train eXtreme Gradient Boosting classification with response parameter `ProbeYield` 
+pcy <- model(pcy, type="class", model="xboost", formula="ProbeYield ~ .", 
+                                                        max_depth=5, nrounds=100, seed=42) 
+``` 
+
+Model vizualization is provided via the `modelPlot` function applied on the `pcy` dataset that holds the model's results. The parameter `first` specifies the first `n` most important parameters to display. In order to ease cluttered plots, we will show first 10 parameters. On the x-axis is the metric that represents the relative importance of each parameter.
+
+
+```{r}
+modelPlot(pcy, first=10, main="Xboost, ProbeYield, classification")  
+```
+
+<br>
+
+The `summary` function called on model output provides a detailed model summary together with the accuracy of the train and test set (*note:* test data statistics are denoted as `NA`, since there was no train/test split done yet). 
+
+```{r}
+summary(pcy)
+```
+
+<br>
+
+### 2. Classification: response parameter `cluster` {#CT_Cluster}  
+
+In the second part of this vignette, we will focus also on a classification problem, but this time with a particular cluster as the response parameter. Use the `formula` parameter to define the cluster name. Similarly to the previous case, the `model` function is applied on the `pcy` dataset with `class` type and `xboost` model. The number of iterations - parameter `nrounds` - is set to 100.   
+
+
+```{r results="hide"}
+ # Train eXtreme Gradient Boosting classification with response parameter cluster `center`
+pcyc <- model(pcy, type="class", model="xboost", formula="center ~ .", nrounds=100, 
+                                                                             seed=42) 
+``` 
+
+The model outcome is plotted using the `modelPlot` function:
+
+```{r}
+modelPlot(pcyc, first=10, main="Xboost, cluster, classification") 
+``` 
+
+ <br>
+
+#### Data balancing
+
+
+So far, we have been working with cluster `center` only, hence with values 1 and 0, representing either the presence or absence of cluster, respectively. The disadvantage of such a set is that it is highly disbalanced, which is caused by the fact that there are not enough patterns belonging to the positive cases, in our case cluster `center`, comparing to number of wafers w/o cluster `center`.  This can be regarded as a problem in learning from highly imbalanced datasets.  
+
+The `model` function has two parameters to address this problem. Parameter `balance` is used in binary classifications to balance positive and negative cases in the train set. The `balance` parameter defines the multiple of the number of positive cases to be sampled out of negative cases. By default these negative cases are sampled from all wafers except for cluster `center`. From this default negative cases group, a specific cluster could be selected, usually named as `clear`, that comprises all wafers w/o any cluster.  Parameter `balanceCol`  is then used to employ a custom group of wafers for negative case sampling, e.g. cluster `clear`. 
+
+In this example, we use the value of 2 to balance the train set and select cluster `clear` for negative case sampling.   
+
+```{r results="hide"}
+# Train eXtreme Gradient Boosting classification on balanced data
+pcyb <- model(pcyc, type="class", model="xboost", formula="center ~ .", nrounds=100, 
+                                               balance=2, balanceCol="clear", seed=42) 
+```
+
+Running the following code will plot the eXtreme Gradient Boosting model output on balanced data:
+
+```{r}
+modelPlot(pcyb, first=10, main="Xboost, cluster, classification, balanced") 
+```
+
+<br>
+
+In our analysis, we are working with wafers in the `center` cluster and we are randomly sampling twice the amount of the wafers from the cluster `clear` for balancing. In case of repeating the balancing process, random sampling will vary. 
+
+To ensure that we work in next steps e.g. visualisation with the same wafers as in the model, we will store the selected wafers in the `usedRow` variable using the `modelTrainRow` function. This function gets data rows employed in the model training using the `model` function. Variable `usedRow` will now contain all the wafers with the `center` cluster and the samples from cluster `clear`.   
+
+
+```{r results="hide"}
+usedRow <- modelTrainRow(pcyb)
+```
+
+<br>
+
+#### Train/test split 
+
+
+The model performance (and hence the model overfit) is evaluated on data that was not used for model training, denoted as  *test data*. This data was not used for model training and it is employed to evaluate the model performance. The split ratio between train/test data of the whole dataset is represented by the `splitRatio` parameter.  A `splitRatio` of 0.7 denotes: 70 percent of the data will be used for training and 30 percent for testing. The default value for this parameter equals 1. 
+
+
+```{r results="hide"}
+# Train eXtreme Gradient Boosting classification on balanced data with a defined 
+# 0.7/0.3 train/test data split
+pcys <- model(pcyc, type="class", model="xboost", formula="center ~ .", nrounds=100, 
+                                                               splitRatio=0.7, seed=42)
+```
+
+Plotting of the eXtreme Gradient Boosting model with response parameter `cluster` and train/test split:
+
+```{r}
+modelPlot(pcys, first=10, main="Xboost, cluster, clasification, split") 
+```
+
+ <br>
+
+To get the model summary, apply the `summary` function on the eXtreme Gradient Boost model output.  It is possible to view a potential model overfit thanks to the train/test set split, which helped to compare the model performance on train and test data. 
+
+
+```{r}
+summary(pcys)
+```
+
+
+<br>
+
+### 3. Regression: response parameter `ProbeYield` {#RT_ProbeYield}  
+
+In the final section, we will look how eXtreme Gradient Boosting is used for a regression task with response parameter `ProbeYield` (defined via the `formula` parameter). In order to specify the regression model, parameter `type` is set to `reg`. 
+
+
+```{r results="hide"}
+# Train eXtreme Gradient Boosting regression with response parameter `ProbeYield`
+pcyr <- model(pcy, type="reg", model="xboost", formula="ProbeYield ~ .", nrounds=100, 
+                                                                              seed=42) 
+``` 
+
+Plotting the regression model for `ProbeYield` response parameter:
+
+```{r}
+modelPlot(pcyr, first=10, main="Xboost, ProbeYield, regression") 
+```
+
+ 
+
+<br>
+
+#### Train/test split 
+
+The `splitRatio` parameter, as mentioned above, defines the ratio between the train and test set. A `splitRatio` of 0.7 means, that 70 percent of the data will be used for training, while 30 percent will be used for testing. 
+
+```{r results="hide"}
+# Train eXtreme Gradient Boosting classification on non-balanced data with a defined 
+# 0.7/0.3 train/test data split
+pcyrs <- model(pcyc, type="reg", model="xboost", formula="ProbeYield ~ .", nrounds=100, 
+                                                                 splitRatio=0.7, seed=42) 
+```
+
+To plot the regression model for `ProbeYield` response parameter with train/test split, use:
+
+```{r}
+modelPlot(pcyrs, first=10, main="Xboost, ProbeYield, regression, split") 
+```
+ <br>
+ 
+Lastly, let us view the model summary for the eXtreme Gradient Boosting algorithm by calling the `summary` function:
+
+```{r}
+summary(pcyrs)
+```
+
+
+
+

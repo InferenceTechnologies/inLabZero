@@ -1,0 +1,257 @@
+---
+title: "inLabZero: Yield decomposition"  
+output: rmarkdown::html_vignette 
+vignette: >
+  %\VignetteIndexEntry{inLabZero: Yield decomposition}  
+  %\VignettePackage{inLabZero}
+  %\VignetteEngine{knitr::rmarkdown}   
+  %\VignetteEncoding{UTF-8} 
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.align="center",
+  fig.width=6, 
+  fig.height=6,
+  out.width="50%",
+  dpi=200,
+  tidy=FALSE
+)
+options(width=80)
+```
+
+_version: 2020/09_   
+
+
+***
+
+**_note_**: *This document looks into Yield decomposition, as a part of the inLabZero package developed by Inference
+Technologies. For more information on the inLabZero package, please refer to: [inLabZero introduction vignette](InLabIntro.html)*             
+
+***
+
+
+## Yield decomposition      
+
+  
+Semiconductor manufacturing is a complex process involving multiple stages, where the level of complexity is increasing in relation to number of devices and feature size. As such, it is crucial to have performance metrics to check and improve the manufacturing performance. One of the most important metrics is **yield**. Wafer yield is calculated as the ratio of good to total semiconductor chips within the wafer. It represents 1 number that is related to the whole wafer. In the semiconductor business, maintaining high yield is a key success factor.  
+
+After the completion of the front-end process, the semiconductor devices undergo a set of electrical tests at Probe to verify their proper functionality. The yield obtained at this step, is called the **probe yield** (`ProbeYield`).  Then the wafers are subjected to visual inspection (FOI), where other dice may be rejected. Total yield after probe and FOI is named **unit probe yield** (`UPYield`). Thus, the unit probe yield can be decomposed as a product of the probe and FOI yield.
+
+We can gain further insight if we separate two phenomena: _systematic losses_ and _random losses_. To address this matter, the probe yield is decomposed into two yield components: **systematic yield** and **random yield**. Using means of conditional yields, we can subsequently decompose unit probe yield using the systematic yield, random yield and FOI yield.
+
+In this vignette, the following inLabZero **topics related to Yield decomposition** are documented:     
+
+1. [Yield components](#section1) 
+2. [Yield decomposition](#section2)
+2. [Defect density for particular yields](#section3)
+
+
+<br>
+
+### 1. Yield components {#section1}
+
+
+Using the probe yield and FOI yield components, we can decompose the unit probe yield in the following way:
+  
+<br>
+
+<center>
+_Y<sub>UP</sub> = Y<sub>probe</sub> ∙ Y<sub>FOI</sub>_ 
+</center>
+
+<br>
+
+The probe yield can be further decomposed into sub-components related to systematic losses (parametric reasons) and random losses (defects-related): 
+
+<br>
+
+<center>
+_Y<sub>probe</sub> = Y<sub>systematic</sub> ∙ Y<sub>random</sub>_
+</center>
+
+<br>
+
+Finally, using means of conditional yields we can decompose unit probe yield in the following way:     
+
+<br>
+
+<center>
+_Y<sub>UP</sub> = Y<sub>probe</sub> ∙ Y<sub>FOI</sub> = Y<sub>systematic</sub> ∙ Y<sub>random</sub> ∙ Y<sub>FOI</sub>_
+</center>
+
+<br>
+
+Contributions to the unit probe **yield loss** _(YL<sub>UP</sub> = 1 - Y<sub>UP</sub>)_ can be calculated accordingly:
+
+<br>
+
+<center>
+_YL<sub>UP</sub> = YL<sub>systematic</sub> + YL<sub>random</sub> + YL<sub>FOI</sub>_
+</center>
+
+<br>
+
+During the analysis of wafer bin maps, we can observe a combination of different patterns. Clustering of single bin wafer maps with specific yield is another way how to remove noise (random and other systematic contributions), assuming that the pattern is mostly associated with single bin yield. 
+This approach is applicable also for wafers with high random defect density.  
+
+<br>
+
+### 2. Yield decomposition {#section2} 
+
+Using the `yieldDecomp` function from the inLabZero package, we can decompose the unit probe yield into systematic yield, random yield and FOI yield. The function is applied on the process control dataset, `pcy`. The following parameters need to be specified:  
+
+* `up`  - defining the column representing the unit probe yield
+* `probe`- specifying the probe yield column
+* `probeSys`- corresponding to the column with systematic yield
+* `probeRnd` - representing the random yield column
+* `foiYield` - standing for the Final Outgoing Inspection yield column 
+
+Looking at the output of the `yieldDecomp` function stored in the `yd` variable, we see the particular yield components as well as the yield loss sum decomposition revealing the main contributor to yield loss in this case:  systematic yield loss. 
+
+
+```{r}
+library(inLabZero)  
+```
+
+```{r echo=FALSE}
+data(pcy)
+data(wbm)
+data(leh)
+timePlotPar(default) 
+```
+
+```{r}
+# Get yield decomposition
+yd <- yieldDecomp(pcy, list(up="UPYield", probe="ProbeYield", probeSys="ProbeYieldSys", 
+  probeRnd="ProbeYieldRnd"), foiYield="FOIYield")
+```
+
+```{r}
+yd
+```
+
+<br>
+
+#### Time series
+
+The time element information is of particular essence during the analysis helping to track issues related to specific time periods. Using the `timePlot` function  we can render the particular yield components as a time series and visualize changes over time. Adding the information on yield decomposition helps to identify whether we are dealing with a systematic issue or a defects-related problem. The charts below depict time series for particular yield components. It can be concluded that the decreased yield at the start of 2016 is related to systematic loss. 
+
+<br>
+
+##### Time series for unit probe yield
+
+```{r}
+# Plots unit probe yield time series
+timePlot(pcy, UPYield, z="UPYield", zBr=1, showLegend=F)
+```
+
+
+<br>
+
+##### Time series for probe yield
+
+```{r}
+# Plots probe yield time series
+timePlot(pcy, ProbeYield, z="ProbeYield", zBr=1, showLegend=F)
+```
+
+<br>
+
+##### Time series for FOI yield
+
+```{r}
+# Plots FOI yield time series
+timePlot(yd$data, FOIYield, z="FOIYield", zBr=1, showLegend=F)
+```
+
+<br>
+
+##### Time series for systematic yield
+
+```{r}
+# Plots systematic yield time series
+timePlot(pcy, ProbeYieldSys, z="ProbeYieldSys", zBr=1, showLegend=F)
+```
+
+<br>
+
+##### Time series for random yield
+
+```{r}
+# Plots random yield time series
+timePlot(pcy, ProbeYieldRnd, z="ProbeYieldRnd", zBr=1, showLegend=F)  
+```
+
+<br>
+
+For more information on Time plot, please refer to [Time plot vignette](TimePlot.html).
+
+
+<br>
+
+### 3. Defect density {#section3}     
+
+
+Let's suppose that the defect density is constant across each wafer and from wafer to wafer and that the critical area for probe failures is the die size (A<sub>D</sub>). Further assuming that probe yield is mostly defects driven, we can relate yield, die size and the defect density (D<sub>0</sub>) using the Poisson model:  
+
+<br>
+
+<center>
+_Y<sub>probe</sub> = e <sup>- A<sub>D</sub> ∙ D<sub>0</sub></sup>_
+</center>
+
+<br>
+
+
+To calculate the specific **defect densities**, we will use the die size (stored in the `dieDim` variable; first item defining the die length and second the die width in mm) and the product of the yield decomposition previously stored in the `yd` variable. 
+
+```{r}
+# Die dimensions
+dieDim <- c(6.5, 6.3)/10
+```
+
+The following examples demonstrate the calculation of specific defect densities per cm<sup>2</sup> using the probe yield, systematic yield and random yield: 
+
+<br>
+
+#### Probe defect density D<sub>0</sub> per cm<sup>2</sup>
+
+```{r}
+-log(yd$product$mean$ProbeYield)/(dieDim[1]*dieDim[2])
+```
+
+<br>
+
+#### Systematic defect density D<sub>0</sub> per cm<sup>2</sup>
+
+```{r}
+-log(yd$product$mean$ProbeYieldSys)/(dieDim[1]*dieDim[2])
+```
+
+<br>
+
+#### Random defect density D<sub>0</sub> per cm<sup>2</sup>
+
+```{r}
+-log(yd$product$mean$ProbeYieldRnd)/(dieDim[1]*dieDim[2])
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

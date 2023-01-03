@@ -1,0 +1,252 @@
+---
+title: "inLabZero: Yield characteristics" 
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{inLabZero: Yield characteristics}  
+  %\VignettePackage{inLabZero}
+  %\VignetteEngine{knitr::rmarkdown}   
+  %\VignetteEncoding{UTF-8} 
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.align="center",
+  fig.width=6, 
+  fig.height=6,
+  out.width="50%",
+  dpi=200,
+  tidy=FALSE
+)
+options(width=80)
+```
+
+_version: 2020/08_  
+
+
+***
+
+**_note_**: *This document looks into Yield characteristics, as a part of the inLabZero package developed by Inference
+Technologies. For more information on the inLabZero package, please refer to: [inLabZero introduction vignette](InLabIntro.html)*             
+
+***
+
+
+## Yield characteristics    
+
+
+Semiconductor manufacturing is a complex process involving multiple stages, where the level of complexity is increasing in relation to number of devices and feature size. As such, it is crucial to have performance metrics to check and improve the manufacturing performance. One of the most important metrics is **yield**. Wafer yield is calculated as the ratio of good to total semiconductor chips within the wafer. It represents 1 number that is related to the whole wafer. In the semiconductor business, maintaining high yield is a key success factor. There are process steps (so called *critical process steps*), which have a strong relationship to wafer yield and therefore, their identification helps to improve yield or keep it at a high level. 
+
+
+There are two main types of yields, **probe yield** (`ProbeYield`) and **unit probe yield** (`UPYield`). After the completion of the front-end process, the semiconductor devices undergo an assortment of electrical tests to verify their proper functionality. The yield obtained at probe, is called the `ProbeYield`. After the wafers are subjected to visual inspection, we obtain `UPYield`, which is thus always equal to or lower than `ProbeYield`. There are also other types of calculated yields, which are considered during the analysis. For more information on the specific yield types and yield decomposition, please refer to [Yield decomposition vignette](YieldDecomposition.html). 
+
+In this vignette, the following inLabZero **topics related to Yield characteristics** are documented:  
+
+1. [Statistical quantities for yield analysis](#section1) 
+2. [Graphical visualizations for yield analysis](#section2) <br>
+ 2a. [Time series](#section3) <br>
+ 2b. [Histogram](#section4) <br>
+ 2c. [Box plot](#section5) <br>
+ 2d. [Bin plot](#section6) <br>
+
+
+<br>
+
+### 1. Statistical quantities for yield analysis {#section1}
+
+A good starting point in the yield analysis is descriptive statistics performed against the yield variables of interest. Let us have a look at the `median` and `mean` value of the unit probe yield for all wafers in dataset `wbm`.
+
+
+```{r}
+library(inLabZero)  
+```
+
+```{r echo=FALSE}
+data(pcy)
+data(wbm)
+data(leh)
+timePlotPar(default) 
+histPlotPar(default) 
+boxPlotPar(default) 
+binPlotPar(default) 
+```
+
+For median of the `UPYield`, use:
+
+```{r}
+# Get median of the unit probe yield variable
+median(wbm[,UPYield])
+```
+
+The mean value of the `UPYield` variable is accessed via:
+
+```{r}
+# Get mean of the unit probe yield variable
+mean(wbm[,UPYield])
+```
+
+To obtain the mean probe yield value of a wafer with a specific number in a lot, for example wafer #5, use:
+
+```{r}
+# Get mean of the unit probe yield variable of 'wafer 5'
+mean(wbm[wafer==5, ProbeYield])
+``` 
+
+For mean probe yield value of a lot with a specific number, for example LOT001, use:
+
+```{r}
+# Get mean of the unit probe yield variable of lot 'LOT001'
+mean(wbm[lot=="LOT001", ProbeYield])
+```
+
+Specifying the `lotWafer` parameter helps to further define an individual wafer from a particular lot, as in the next example:
+
+```{r}
+# Get mean of the unit probe yield variable of 'wafer 12' from lot 'LOT001'
+mean(wbm[lotWafer=="LOT001-W12", ProbeYield])
+```  
+
+<br>
+
+### 2. Graphical visualizations for yield analysis {#section2}   
+
+
+A visual summary makes it easier to identify trends and patterns, which is one of the purposes of data analysis itself. There are several useful charts for a thorough yield analysis. 
+
+<br>
+
+
+#### Time series {#section3} 
+
+Visualization of changes over time is perhaps the most basic and common use of data visualization, because most data has an element of time involved. Therefore, the first step in many data analyses is to see how the data trends over time.
+
+Using the `timePlot` function, we can render the unit probe yield as a time series. In the example below, we create a `UPYield` time plot with the `probeEndDate` as the dependent variable. Parameter `z` specifies the variable for the `z` axis. If we are interested in `UPYield` time series by `part` (particular part numbers will be differentiated by color), we define `part` as the `z` variable. 
+
+The time series enables to identify outliers or potential issues and link these to specific dates. Using the `z` axis, we can further identify if the problem is related to a specific variable, i.e. a certain part number etc. 
+
+```{r}
+# Set the legend poistion to 'topleft'   
+timePlotPar(legend.pos="topleft")
+# Plot the 'UPYield' variable with the 'part' variable on the z-axis
+timePlot(wbm, UPYield, z="part", zLevel="all", timeCol="probeEndDate", sequence=F, 
+                                                main="UPYield by Part", showLegend=T)
+```
+<br> 
+<br>
+
+**_note_**: For more information on the `timePlot` function, please refer to: [Time plot vignette](TimePlot.html). 
+
+
+<br>
+
+#### Histogram {#section4} 
+
+Determination of frequency is also a fairly basic use of data visualization. We will further explore the frequency of particular `UPYield` values present in the lot using the inLabZero function `histPlot`. A histogram looks like a bar chart, but depicts frequency on an interval scale, rather than trends over time. Each column represents a range of the values and the height of the column corresponds to how many values there are in that range. It is a powerful visualization tool to easily inspect the underlying distribution of the data set and investigate other properties, such as skewness and kurtosis.
+
+Looking at the `UPYield` histogram, we can see two distributions. One between the values 60-70% and the other slightly above the 90%. The y-axis depicts the percentage of values related to particular histogram columns. At this point, we start to have a more complex view on the `UPYield` variable. 
+
+```{r}
+# Plot histogram for the 'UPYield' variable
+histPlot(pcy, UPYield, chart="hist", z="UPYield", zBr=1, showLegend=F)
+```
+
+
+<br>
+<br>
+
+**_note_**: For more information on the `histPlot` function, please refer to: [Hist plot vignette](HistPlot.html).  
+ 
+
+<br>
+
+#### Box plot {#section5} 
+
+For a deeper information on the variability or dispersion of the data, the values of the outliers, identification whether the data is symmetrical, determining how tightly data is grouped and if or how the data is skewed, we can highly benefit from the box plot. A box plot is a standardized way of displaying the distribution of data based on a five number summary: minimum, first quartile (Q1), median, third quartile (Q3), and maximum. 
+
+A box plot is created using the inLabZero function `boxPlot` applied on the process control dataset, `pcy`.  For a complex analysis, it is crucial to verify the unit probe yield per wafer in lot, as it is a very fast way to identify wafers affected by a problem. The following example presents an overview of the `UPYield` per Wafer in lot. The red horizontal line corresponds to the `median` of the `UPYield` variable. From the chart, it is visible that the yield of the 1st wafer and 25th wafer is significantly lower than the yield of other wafers in lot.
+
+```{r}
+# Plot 'wafer' variable against the 'UPYield' variable
+boxPlot(pcy, wafer, UPYield, xLevel="all", z=NULL, main="UP Yield per Wafer in Lot")
+abline(h=median(pcy[,UPYield]), col="red", lty=3)
+```
+
+<br>
+<br>
+
+To get median unit probe yield values for these outer wafers (wafer# 1 and wafer# 25), use: 
+
+```{r}
+# Get median of unit probe yield for wafer# 1  
+median(pcy[wafer==1,UPYield])
+```
+
+```{r}
+# Get median of unit probe yield for wafer# 25
+median(pcy[wafer==25,UPYield])
+```
+
+
+**_note_**: For more information on the `boxPlot` function, please refer to: [Box plot vignette](BoxPlot.html). 
+
+
+<br>
+
+
+#### Bin plot {#section6}
+
+
+Bin is a number that is referenced to a test that fails during die probe testing. The bin pareto chart is plotted using the `binPlot` function applied on the wafer bin map, `wbm`. The line represents the cumulative `%` of yield loss explained. The purpose of this graph is to highlight the bins with the greatest `%` of yield loss in decreasing order of importance. 
+
+The plot is created using the inLabZero function `binPlot` applied on the wafer bin map, `wbm` (corresponding to parameter obj). If clusters are present, browsing is initiated.
+
+Let us plot bin pareto for all maps and all bins using the following call (figure below depicts bin pareto for all maps).
+
+
+```{r eval=FALSE}
+# Plot bin pareto for all maps and all bins
+binPlot(wbm)
+```
+
+```{r echo=FALSE, results="hide"}
+# Plot bin pareto for all maps and all bins
+wbm1 <- wbm[,-c("clear", "edge","center")]
+binPlot(wbm1)
+```
+
+<br>
+<br>
+
+If the `plot` parameter is set to `FALSE`, list of bin pareto percentages is returned instead of the plot. By default, this parameter is set to `TRUE`.  
+
+There are several display options. When using the `$all` option, we will obtain the list of bin pareto percentages for all maps.
+
+```{r}
+# Return list of bin pareto percentages for all maps
+binPlot(wbm, plot=FALSE)$all
+```
+
+<br>
+<br>
+**_note_**: For more information on the `binPlot` function, please refer to: [Bin plot vignette](BinPlot.html).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

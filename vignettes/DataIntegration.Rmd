@@ -1,0 +1,755 @@
+---
+title: "inLabZero: Data Integration"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{inLabZero: Data Integration}
+  %\VignettePackage{inLabZero}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.align="center",
+  fig.width=6, 
+  fig.height=6,
+  out.width="50%",
+  dpi=200,
+  tidy=FALSE
+)
+options(width=80)
+```
+
+_version: 2020/02_ 
+
+
+***
+
+**_note_**: *This document looks into data integration, as a part of the inLabZero package developed by Inference
+Technologies. For more information on the inLabZero package, please refer to: [inLabZero introduction vignette](InLabIntro.html)*   
+
+***
+
+<br>
+
+## Data integration
+
+During the data analysis process, it is essential to be able to share data between different data layers (`pcy`, `wbm`, `leh`). In order to
+obtain needed variables from diverse layers, proper data integration needs to be ensured.
+
+The key function for variable transfer between dissimilar data layer objects represents the function `transfer`. The
+first two parameters define the source (`from`) and the target object (`to`), respectively, followed by the column name
+or names to be transferred. The parameter `filter` can be used for conditional transfer of variable data. This is
+particularly useful in case we want to e.g. limit the yield information below a certain value. The aggregation function
+can be specified through the `method` parameter, choosing from: `min`, `max`, `majority` (default), `mean` or `median`.
+This method needs to be defined for transfer from higher to lower granularity. A crucial parameter applied during the
+data integration represents the `key` parameter. This parameter specifies the merging key for the variable transfer
+between different data layers. The default key will be chosen automatically as the highest intersect of granularities.
+For `wbm`/`pcy` transfer, the `lotWafer` key is applied. For `wbm`/`leh`, `pcy`/`leh`, the `lot` key is used.
+
+
+During the process of transfer between different data layers, it is of great importance to be aware of the various
+granularities (or smallest units) of the datasets used. The table below summarizes this information in order to get a
+more transparent view on this topic.   
+
+
+##### Overview of minimum granularities for particular datasets
+
+
+```{r table1, echo=FALSE, message=FALSE, warnings=FALSE, results='asis'}
+tabl <- " 
+| Dataset          | Granularity        | 1 row refers to | Additional information  | 
+|-------------------|-------------------|-------------------|--------------------------------|
+| pcy      | test site| 1 test site | 5 sites per wafer, 25 wafers per lot |  
+| wbm      | wafer      | 1 wafer | 25 wafers per lot|  
+| leh      | lot      |1 lot |     | 
+"
+cat(tabl) 
+```
+
+<br>
+
+We can carry out the analysis at two granularities:
+
+* wafer level
+* site level
+
+At **wafer level**, there is 1 value of yield per wafer (e.g. `ProbeYield`), which means that PCM parameters from all
+test sites on the wafer are eventually combined with the same yield value.  At **site level**, the yield is calculated
+in the vicinity of the test site and this `PCMYield` is combined only with PCM parameters from this particular test
+site. With the site level approach, we can significantly reduce information noise and it is possible to pick up only
+selected segments of wafers for analysis (using the filter option). If there is a need to utilize the whole wafer yield,
+then wafer level is preferred.
+
+In principle, we can also do the analysis on the lot level, but this procedure leads to a sizable data reduction.
+Therefore it is suitable for issue investigation that mostly affects the whole lot. In this case, the rules for transfer
+to lower granularity apply. 
+
+In this vignette, we will demonstrate the following **applications of data integration**:
+
+1. [Data integration - wafer level](#waferLevel) <br>
+    1.1 [Transfer to higher granularity *(wbm to pcy, leh to wbm, leh to pcy)*](#wl_to_H) <br>
+    1.2 [Transfer to lower granularity *(pcy to wbm, wbm to leh, pcy to leh)*](#wl_to_L)
+
+2. [Data integration - site level](#siteLevel) <br>
+    2.1 [Transfer to higher granularity *(wbm to pcy, leh to pcy)*](#sl_to_H)
+
+<br>
+
+***
+
+**_note_**: During the data integration process, we will apply the `transfer` function to the wafer bin map dataset,
+`wbm`, the process control dataset, `pcy`, and the lot equipment history dataset, `leh`. However, for the purposes of
+this vignette, we will show only a subset of the result output with columns relevant to the topic e.g. the `lotWafer`
+parameter and the particular variables that are of interest.  
+
+***
+
+
+
+<br> 
+
+## 1. Data integration - wafer level {#waferLevel}
+
+Let us concentrate on the approach, when the die yield per wafer represents the lowest yield resolution.
+
+<br>
+
+### 1.1 Transfer to higher granularity {#wl_to_H}
+
+
+When considering transfer from lower to higher granularity, we have the following alternatives:
+
+
+
+
+##### Transfer options to higher granularity 
+
+
+``` {r table2, echo=FALSE, message=FALSE, warnings=FALSE, results='asis'}
+tabl <- " 
+|                           |test site          |  | wafer            | | lot                |
+|---------------------------|-------------------|--|------------------|--|-------------------|
+| wafer level to site level |pcy                |<-|wbm               |  |                   |
+| lot level to wafer level  |                   | | wbm              |<-| leh               |
+| lot level to site level   |pcy                | |                  |<-| leh               |
+"
+cat(tabl) 
+```
+
+
+<br>
+
+####  Wafer level to site level 
+
+In the case of wafer level to site level transfer, we are transferring a particular variable from the wafer bin map
+dataset, `wbm`, to the process control data set, `pcy`.  
+
+For demonstration purposes, let us create a new cluster, `newClust`, in the `wbm` dataset that will be subsequently used
+for transferring. This cluster will include all the wafers from cluster `edge`. 
+
+For more information on cluster manipulation, please refer to [Cluster manipulation vignette](ClusterManipulation.html).
+
+
+```{r}
+library(inLabZero)
+```
+
+```{r echo=FALSE}
+data(wbm)
+data(pcy)
+data(leh)
+```
+
+```{r echo=FALSE}
+mapPlotPar(default)
+sitePlotPar(default)
+```
+
+```{r results="hide"}
+# Create a new cluster, add all wafers from cluster edge to cluster newClust
+wbm <- cluster(wbm, from=edge, to=newClust, add=TRUE)
+
+```
+
+```{r echo=FALSE}
+# Subsetting only columns of interest for clarity
+wbm <- wbm$tab[,c("lotWafer", "wafer", "part", "UPYield", "ProbeYield", 
+  "clear", "center", "edge", "newClust")]
+```
+
+Looking at our wafer bin map dataset, we can see that the new cluster was added to `wbm`. 
+
+```{r}
+wbm
+```
+
+```{r echo=FALSE, results="hide"}
+data(wbm)
+wbm <- cluster(wbm, from=edge, to=newClust, add=TRUE)
+```
+
+Now we can apply the `transfer` function and store the result in our new variable, `pcyc`, which will contain the `pcy`
+dataset along with the newly transferred column: `newClust`. The following call can be applied: 
+
+```{r results="hide"}
+# Transfer cluster 'newClust' from wbm to pcy
+pcyc <- transfer(wbm, pcy, "newClust")
+```
+
+```{r echo=FALSE}
+# Subsetting only columns of interest for clarity
+pcyc <- pcyc$tab[,c("lotWaferSiteid", "lotWafer", "wafer", "part", "UPYield", 
+  "ProbeYield", "siteid", "newClust", "PARAM01", "PARAM02", "PARAM03")]
+```
+
+Our process control dataset, stored in `pcyc`, contains new column `newClust`, that was previously only part of the
+`wbm` dataset. In order to demonstrate the process of transfer to higher granularity, we will subset the `pcyc` and
+focus on two wafers (Wafer 12 from `LOT001` and wafer 18 from `LOT165`), one of which belongs to cluster `newClust`.
+Each wafer contains 5 rows for 5 different sideIDs. All siteIDs have 1 `ProbeYield` value. 
+
+
+```{r}
+pcyc[lotWafer %in% c("LOT001-W12", "LOT165-W18")]
+```
+
+```{r echo=FALSE}
+# Subsetting only columns of interest for clarity
+wbm <- wbm$tab[,c("lotWafer", "wafer", "part", "UPYield", "ProbeYield", "newClust" )]
+```
+
+Now we can see the point of the transfer to higher granularity: 1 value of `ProbeYield` that previously corresponded to
+1 wafer in the `wbm` dataset is now matched after the transfer in `pcyc` to all siteIDs and hence to five rows.
+
+
+
+```{r echo=FALSE, results="hide"}
+data(wbm)
+wbm <- cluster(wbm, from=edge, to=newClust, add=TRUE)
+```
+
+<br>
+
+##### Transfer limited by filter 
+
+As described above, conditional transfer of variable data can be achieved through the use of the `filter` parameter. The
+call, `filter=(pcy[,ProbeYield]>96`, limits the transferred data (`newClust`) to `ProbeYield` values above 96%.  
+
+
+
+```{r results="hide"}
+pcycf <- transfer(wbm, pcy, "newClust", filter=(pcy[,ProbeYield]>96))   
+```
+
+```{r echo=FALSE}
+# Subsetting only columns of interest for clarity
+pcycf <- pcycf$tab[,c("lotWaferSiteid", "lotWafer", "wafer", "part", "UPYield", 
+  "ProbeYield", "siteid", "newClust", "PARAM01", "PARAM02", "PARAM03")]
+```
+
+Process control dataset after data integration with `newClust` column complying with the set conditions is shown below.
+Wafer number 12 from lot `LOT001` that previously belonged to `newClust` does not meet the `ProbeYield` condition and
+thus after this transfer is not present in the `newClust` cluster.
+
+```{r}
+pcycf
+```
+
+<br>
+
+##### Number of wafers after integration  
+
+The information on the number of wafers present after the integration is obtainable in the following way:
+
+```{r}
+length(unique(pcycf[newClust>0, lotWafer]))
+``` 
+
+The notion `newClust>0` is applied for wafer presence check in the particular cluster (column), where presence
+is equal to 1. The filter used in the above section applied strict rules and therefore, in our case,
+there are no wafers present in the cluster `newClust` with `ProbeYield` above 96%. 
+
+Looking at the `pcyc` variable after the first transfer, where `newClust` represents a copy of the `edge` cluster, we
+see that 158 wafers are now present in the `newClust` column.
+
+```{r}
+length(unique(pcyc[newClust>0, lotWafer]))
+``` 
+
+<br>
+
+#### Lot level to wafer level  
+
+If we are interested in equipment history data corresponding to a particular process stage, we can transfer this
+information from the lot equipment history dataset, `leh`. In this example, we choose to transfer stage `STAGE008` from
+the `leh` dataset into the `wbm` dataset. 
+
+
+```{r results="hide"}
+wbm <- transfer(leh, wbm, "STAGE008") 
+```
+
+```{r echo=FALSE}
+# Subsetting only columns of interest for clarity
+wbm <- wbm$tab[,c("lotWafer", "lot", "wafer", "part", "UPYield", "ProbeYield",
+ "newClust", "STAGE008")]
+```
+
+Wafer bin map dataset now contains `STAGE008` after data integration: 
+
+```{r}
+wbm
+```
+
+We can explain the transfer to higher granularity (`leh` -> `wbm`) on lot `LOT131`. The `leh` dataset (shown below)
+lists equipment `EQ025` for `STAGE08`, which is presented on 1 row. 
+
+
+```{r echo=FALSE}
+leh <- leh$tab[,c("lot", "part", "STAGE008")]
+# Subsetting only columns of interest for clarity
+```
+
+
+```{r}
+leh[lot=="LOT131"]
+```
+
+After the transfer, this information is matched to every wafer from `LOT131` (contains 18 wafers altogether). 
+
+```{r}
+wbm[lot=="LOT131"]
+```
+
+<br>
+
+Using the `mapPlot` function, we can plot the corresponding map for `LOT001`, `wafer 12`. The use of the `subMain`
+parameter enables to specify the particular information to be plotted below the map. In our case, it is the equipment
+name used at `STAGE008`. 
+
+
+```{r echo=FALSE, results="hide"}
+data(wbm)
+data(leh)
+wbm <- transfer(leh, wbm, "STAGE008") 
+```
+
+```{r}
+mapPlot(wbm[lotWafer=="LOT001-W12"], subMain="STAGE008")
+```
+
+<br>
+  
+#### Lot level to site level 
+
+Similar situation arises, when transferring a process stage of interest into the process control dataset, `pcy`.   
+
+```{r echo=FALSE}
+data(pcy)
+data(leh)
+```
+
+```{r results="hide"}
+pcy <- transfer(leh, pcy, "STAGE008") 
+```
+
+In order to explain the transfer to higher granularity (`leh` -> `pcy`), let us focus on lot `LOT005`. The `leh` dataset
+lists equipment `EQ012` for `STAGE08` (presented on 1 row).
+
+```{r echo=FALSE}
+lehc <- leh$tab[,c("lot", "part", "STAGE008")]
+# Subsetting only columns of interest for clarity
+```
+
+```{r}
+lehc[lot=="LOT005"]
+```
+
+```{r echo=FALSE, results="hide"}
+# Subsetting only columns of interest for clarity
+pcy <- pcy$tab[,c("lotWaferSiteid", "lotWafer", "part", "UPYield", "ProbeYield", 
+  "siteid", "PARAM01", "PARAM02", "PARAM03", "STAGE008")]
+```
+
+After the transfer, this information is matched to every siteID from `LOT005`.
+
+```{r}
+pcy[lotWafer=="LOT005-W08"]
+```
+
+
+```{r echo=FALSE}
+data(pcy)
+data(wbm)
+```
+
+
+<br>
+
+### 1.2 Transfer to lower granularity {#wl_to_L}
+
+Transferring from higher to lower granularity is summarized in the table below.
+
+##### Transfer options to lower granularity 
+
+
+``` {r table3, echo=FALSE, message=FALSE, warnings=FALSE, results='asis'}
+tabl <- " 
+|                           |test site          |  | wafer              |  |  lot               |
+|---------------------------|-------------------|--| -------------------|--| -------------------|
+| site level to wafer level |pcy                |->| wbm                |  |                    |
+| wafer level to lot level  |                   |  | wbm                |->|  leh               |
+| site level to lot level   |pcy                |->|                    |  |  leh               |
+"
+cat(tabl) 
+```
+
+During the transfer to lower granularity, we need to define the method that will be applied for aggregation. The
+particular aggregation functions (specified via the `method` parameter) are: `min`, `max`, `majority` (default), `mean`
+or `median`. The necessity of the aggregation is related to different granularities. This means that we have 5 times
+more rows in the `pcy` dataset than in the `wbm` dataset. When transferring from `pcy` to `leh`, we are assigning 25x5
+rows to 1 lot. If we choose `mean` as the aggregation function in this case, we will use the mean of 25x5 values for the
+assignment.
+
+##### Number of rows for `pcy` and `wbm`: 
+
+```{r}
+nrow(pcy)
+nrow(wbm)
+```
+
+
+<br>
+
+#### Site level to wafer level 
+
+If we want to add a certain parameter that is present in the `pcy` dataset to the `wbm` dataset, we can use the function
+calls as per below. In this case, we are transferring the parameter `PARAM10` using `mean` as the aggregation function. 
+
+```{r results="hide"}
+wbm <- transfer(pcy, wbm, "PARAM10", method="mean")
+```
+In the `pcy` dataset, `PARAM10` is available for 5 different sideIDs (5 rows for a particular wafer).
+
+```{r echo=FALSE}
+# Subsetting only columns of interest for clarity
+data(pcy)
+pcy <- pcy$tab[,c("lotWaferSiteid", "lotWafer", "wafer", "part", "UPYield", "ProbeYield", 
+                  "siteid", "PARAM10")]
+```
+
+
+```{r}
+pcy[lotWafer=="LOT001-W12"]
+```
+
+In the `wbm` dataset, 1 row corresponds to 1 particular wafer (in this example, we are focusing on wafer 12 from
+`LOT001`). Using the aggregation function, `mean`, the value of `PARAM10` after the transfer to `wbm` will represent the
+mean value of the 5 values listed above in the `pcy` dataset.
+
+
+```{r echo=FALSE}
+# Subsetting only columns of interest for clarity
+wbm <- wbm$tab[,c("lotWafer", "wafer", "part", "UPYield", "ProbeYield", 
+  "clear", "center", "edge", "PARAM10")]
+```
+
+```{r}
+wbm
+``` 
+
+<br>
+
+Using the `mapPlot` function, we can plot the corresponding map for `LOT001`, `wafer 12`. This time we will choose
+`PARAM10` to be plotted below the map, via the the `subMain` parameter.
+
+
+```{r echo=FALSE, results="hide"}
+data(wbm)
+data(leh)
+data(pcy)
+wbm <- transfer(pcy, wbm, "PARAM10", method="mean")
+```
+
+```{r results="hide"}
+mapPlot(wbm[lotWafer=="LOT001-W12"], subMain="PARAM10")
+```
+
+
+```{r echo=FALSE}
+data(wbm)
+```
+
+<br>
+
+#### Wafer level to lot level 
+
+Imagine we want to have the information on particular clusters in the lot equipment history dataset, `leh`. Using the
+examples below, we can transfer the `clear` and `edge` columns to `leh` dataset using `mean` as the aggregation
+function. 
+
+
+```{r results="hide"}
+lehc <- transfer(wbm, leh, "clear", method="mean")  
+lehc <- transfer(wbm, lehc, "edge", method="mean") 
+``` 
+
+
+
+
+```{r echo=FALSE}
+# Subsetting only columns of interest for clarity
+wbm <- wbm$tab[,c("lotWafer", "lot", "wafer", "part", "UPYield", "ProbeYield", 
+  "clear", "center", "edge")]
+```
+
+In this example, we will look at `LOT005`, which  contains 6 wafers and clusters `clear`, `center` and `edge`.
+
+```{r}
+wbm[lot=="LOT005"]
+```
+
+```{r echo=FALSE}
+# Subsetting only columns of interest for clarity
+lehc <- lehc$tab[,c("lot", "part", "clear", "edge", "STAGE001", "STAGE002", "STAGE003")]
+```
+
+As a result of this transfer process, we see that clusters `clear` and `edge` are now contained in the lot equipment
+history dataset, `lehc` (below). We were aggregating each row representing one wafer from `LOT005` to 1 row representing
+one lot, using the mean function.
+
+```{r}
+lehc[lot=="LOT005"]
+``` 
+
+After the integration, `lehc` contains information on the presence of a cluster in the particular lot with values in the
+range from 0 to 1. Since we have chosen the `mean` function for aggregation, these values represent a mean value of
+wafer presence with the cluster in the lot. As a result, we will only obtain 1 in case that all wafers in the given lot
+have that cluster. Generally, this number represents a decimal number, which denotes the percentage of wafers that have
+the cluster present in the lot. 
+
+Therefore, the following cases are of interest for aggregation of clusters:
+
+* `mean` - percentage of wafers with the cluster present in the lot
+* `min` - equals 0, if at least one wafer in the lot does not have the cluster, otherwise equals 1
+* `max` - equals 1, if at least one wafer in the lot has the cluster, otherwise equals 0
+
+<br>
+
+```{r echo=FALSE}
+data(leh)
+data(wbm)
+data(pcy)
+```
+
+<br>
+
+#### Site level to lot level 
+
+Similarly, transferring a particular parameter from the `pcy` dataset to the `leh` dataset, we apply the following call.
+`Median` is used as the aggregation function, in this case.
+
+
+```{r results="hide"}
+leh <- transfer(pcy, leh, "PARAM10", method="median")  
+```
+
+
+```{r echo=FALSE}
+# Subsetting only columns of interest for clarity
+data(pcy)
+pcy <- pcy$tab[,c("lotWaferSiteid", "lotWafer", "wafer", "part", "UPYield", "ProbeYield", 
+                  "siteid", "PARAM10")]
+``` 
+
+We will focus on wafer 12 from `LOT001` In the `pcy` dataset. `PARAM10` is listed for 5 different sideIDs (5 rows for a
+particular wafer).
+
+```{r}
+pcy[lotWafer=="LOT001-W12"]
+```
+
+
+```{r echo=FALSE}
+# Subsetting only columns of interest for clarity
+leh <- leh$tab[,c("lot", "part", "STAGE001", "STAGE002", "STAGE003", "PARAM10")]
+```
+Looking at `leh` dataset after the transfer, we can see that it includes now `PARAM10` column, where each row contains
+the median of `PARAM10` values from all test sites in particular lot (shown above).
+
+```{r}
+leh[lot=="LOT001"]
+```
+
+
+
+<br>
+
+## 2. Data integration - site level {#siteLevel}
+
+
+### PCMYield map 
+    
+Another approach consists in looking at the yield calculated in the test site vicinity. This yield is denoted as
+`PCMYield`. Each wafer contains 5 test sites. The greenish square represents the area around the test site (small white
+square in the middle), where the `PCMYield` is calculated. Each designated area around the test site is therefore
+represented by 1 value of `PCMYield`. The value of the mean is shown in the bottom part of the squares. 
+
+```{r echo=FALSE}
+data(wbm)
+data(pcy)
+data(leh)
+```
+
+In order to plot the `PCMYield` parameter's distribution center per site, we can apply the `sitePlot` function. The
+centering function applied on `PCMYield` data can be specified through the `fun` parameter. In our example, we use the
+`mean` function, therefore we will plot the `PCMYield` mean of all wafers in the `pcy` dataset.   
+
+
+```{r}
+sitePlot(pcy, PCMYield, fun=mean)
+```
+
+
+
+
+<br>
+
+### 2.1 Transfer to higher granularity {#sl_to_H}
+
+In the previous section, where we discuss data integration on wafer level, we have demonstrated all the transfer
+combinations between data levels. In this section, we will further look at some specific cases of transfer to higher
+granularity related to test site and `PCMYield`.
+ 
+
+
+##### Transfer options to higher granularity 
+
+``` {r table4, echo=FALSE, message=FALSE, warnings=FALSE, results='asis'}
+tabl <- " 
+|                           |test site          |  | wafer            | | lot                |
+|---------------------------|-------------------|--|------------------|--|-------------------|
+| wafer level to site level |pcy                |<-|wbm               |  |                   |
+| lot level to site level   |pcy                | |                  |<-| leh               |
+"
+cat(tabl) 
+```
+
+
+<br>
+
+####  Wafer level to site level 
+
+In the case of wafer level to site level transfer, we are transferring a particular variable from the wafer bin map
+dataset, `wbm`, to the process control data set, `pcy`.  
+
+
+```{r echo=FALSE, results="hide"}
+data(wbm)
+wbm <- cluster(wbm, from=edge, to=newClust, add=TRUE)
+```
+
+We will again apply the `transfer` function and store the result in our new variable, `pcyc`, which will contain the
+`pcy` dataset along with the newly transferred column: `newClust`.  We can transfer variables conditionally using the
+`filter` parameter. Filter `filter=(pcy[,PCMYield]<95` limits the transferred `newClust` data to `PCMYield` below 95%. 
+
+The following call can be applied:
+
+```{r results="hide"}
+pcyc <- transfer(wbm, pcy, "newClust", filter=(pcy[,PCMYield]<95))   
+```
+
+```{r echo=FALSE}
+# Subsetting only columns of interest for clarity
+pcyc <- pcyc$tab[,c("lotWafer", "part", "siteid", "UPYield", "PCMYield", 
+  "clear", "center", "edge", "newClust", "PARAM01", "PARAM02", "PARAM03")]
+```
+
+After the transfer, our process control dataset, stored in `pcyc`, contains new column `newClust` that was previously
+only part of the `wbm` dataset. By applying the filter to the `PCMYield`, we can see that the `newClust` is not
+transferred to siteid #3, which is the wafer center.  
+
+
+```{r}
+pcyc
+```
+
+
+<br>
+
+##### Number of wafers per site after integration  
+
+The information on the number of wafers per test site present after the integration is obtainable in the following way:
+
+```{r echo=FALSE, results="hide"}
+data(wbm)
+data(pcy)
+data(leh)
+wbm <- cluster(wbm, from=edge, to=newClust, add=TRUE)
+pcyc <- transfer(wbm, pcy, "newClust", filter=(pcy[,PCMYield]<95))   
+```
+
+
+```{r}
+table(pcyc[,newClust], pcyc[,siteid])   
+``` 
+
+
+<br>
+
+##### PCMYield map for selected cluster 
+
+We can use again the `sitePlot` function to plot the wafer map of the mean `PCMYield` yield per test site while
+requesting `pcyc[newClust>0]`.
+
+
+```{r}
+sitePlot(pcyc[newClust>0], PCMYield, fun=mean)
+```
+
+<br>
+      
+#### Lot level to site level  
+
+Similar situation arises, when transferring a process stage of interest into the process control dataset, `pcy`. 
+
+
+```{r echo=FALSE}
+data(pcy)
+```
+
+```{r results="hide"}
+pcy <- transfer(leh, pcy, "STAGE008") 
+```
+
+In order to explain the transfer to higher granularity (`leh` -> `pcy`), let us focus on lot `LOT005`. The `leh` dataset lists
+equipment `EQ012` for `STAGE08` (presented on 1 row).
+
+```{r echo=FALSE}
+leh <- leh$tab[,c("lot", "part", "STAGE008")]
+```
+
+```{r}
+leh[lot=="LOT005"]
+```
+
+
+```{r echo=FALSE, results="hide"}
+
+# Subsetting only columns of interest for clarity
+pcy <- pcy$tab[,c("lotWaferSiteid", "lotWafer", "part", "UPYield", "ProbeYield", 
+                  "siteid", "PARAM01", "PARAM02", "PARAM03", "STAGE008")]
+```
+After the transfer, this information is matched to every siteID from `LOT005`.
+
+```{r}
+pcy[lotWafer=="LOT005-W08"]
+```
+
+
+
+
+
+

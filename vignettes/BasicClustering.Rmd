@@ -1,0 +1,282 @@
+---
+title: "inLabZero: Basic Clustering"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{inLabZero: Basic Clustering}
+  %\VignettePackage{inLabZero}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.align="center",
+  fig.width=6, 
+  fig.height=6,
+  out.width="50%",
+  dpi=200,
+  tidy=FALSE
+)
+options(width=80)
+```
+
+_version: 2020/01_
+
+
+***
+
+**_note_**: *This document looks into cluster analysis, as a part of the inLabZero package developed by
+Inference Technologies. For more information on the inLabZero package, please refer to: [inLabZero introduction
+vignette](InLabIntro.html)*
+
+***
+
+
+## Cluster Analysis 
+
+ 
+Clustering (or cluster analysis) divides data into groups, called  **clusters**. Objects belonging to the same group are
+in a sense more similar to each other than objects present in other groups (clusters). Cluster analysis can be achieved
+by applying various algorithms, which use different approaches to cluster constitution, having also distinct efficacy in
+cluster detection.
+
+
+<br>
+
+## Case Example: K-means Analysis 
+
+
+**K-means** is an unsupervised machine learning algorithm that groups similar data points together while discovering
+underlying patterns. In order to achieve this goal, it looks for a fixed number of clusters - **_k_** (_note_: in our
+case example below, this corresponds to the parameter `centers`). This number is defined by the user and it refers to
+the number of centroids the user estimates in the dataset (*_note_*: the real number of centroids is unknown before the
+analysis itself). A centroid is the imaginary or real location representing the center of the cluster. Please note that
+this parameter has to be chosen carefully. If we set the number of centroids too low, we can face a situation that we
+omit a certain pattern (problem). A number that is too high might lead to pattern repetition. In such case, though, it
+is possible to perform cluster manipulation and combine similar clusters into one (for more information on cluster
+manipulation, please refer to [Cluster manipulation vignette](ClusterManipulation.html)).
+
+K-means algorithm repeats 2 steps until convergence:
+
+* Find the closest centroid to each point, and group points that share the same closest centroid 
+* Update each centroid to be the mean of the points in its group
+
+
+In this vignette, we will demonstrate two **applications of k-means analysis**:
+
+1. [Performing k-means analysis on wafer bin maps with all bins](#allBins)
+2. [Performing k-means analysis on wafer bin maps with single bin](#singleBin)
+
+<br>
+
+### Performing k-means analysis on wafer bin maps with all bins {#allBins}
+
+
+The `model` function is a wrapper to perform regression, classification, clustering and dimensionality reduction. For
+our example, we will define the type of function as `cluster` and `kmeans` is selected as the clustering model. The
+model wrapper itself is run on wafer bin maps (`wbm`) dataset with data specification corresponding to models on maps.
+Number of clusters, as previously brought up, is defined via the `centers` parameter.  
+
+Clustering algorithm is applied to 100% of the data and the model outcome shows the number of wafers belonging to
+particular clusters.
+
+A detailed description of the models wrapper can be found in the corresponding [Modeling vignette](CART.html).
+
+
+```{r}
+library(inLabZero)
+```
+
+```{r echo=FALSE}
+data(wbm)
+```
+
+```{r echo=FALSE}
+mapPlotPar(default)
+timePlotPar(default)
+```
+
+```{r}
+# Perform clustering on all wafer bin maps applying the 'k-means' method with 6  
+# user defined centroids
+wbm <- model(wbm, data="map", type="cluster", model="kmeans", centers=6, seed=42)  
+```
+
+
+<br>
+
+#### Viewing model summary 
+
+
+By calling the summary function on the output of the model (stored in the previous step in the variable `wbm`), we can
+view the model results summary. 
+
+The summary contains all the clusters, as defined in the model function, summarizing number of wafers belonging to
+particular clusters. Complete information on bins is also depicted. In the case of wafer bin maps, `bin0` occurrences
+represent good dice. Any non zero bin represents failed die.
+
+
+```{r}
+summary(wbm)
+```
+
+<br>
+
+#### Plotting a heatmap on all bins
+
+
+To visualize clustering results let us plot the heatmaps (composite maps), where colors correspond to bad die frequency,
+using the `mapPlot` plotting function. The input for the `heat` function represents the `bin` function, which in this
+case creates 1 fail map, i.e. combines all the bins into `bin1`.
+
+The figure below represents a composite map for a particular cluster.
+
+
+```{r results="hide", fig.width=7, fig.height=10.5, out.width="100%"}
+# Set the viewing settings for subsequent plotting via 'mapPlot' to 3 rows and 2 columns
+par(mfrow=c(3,2))
+mapPlot(heat(bin(wbm, "all", 1)))
+
+```
+
+<br>
+
+#### Browse maps in cluster
+
+
+Selection of wafers belonging to cluster `C2` is done via the `wbm[C2>0]` call (figure below depicts map corresponding
+to row 1).
+
+A detailed description of map browsing can be found in the corresponding [Map browsing vignette](MapBrowsing.html).
+
+
+```{r eval=FALSE}
+mapPlot(wbm[C2>0], numMain=T)
+```
+```{r echo=FALSE, results="hide"}
+mapPlot(wbm[C2>0][1], numMain=T)
+```
+
+
+
+<br>
+
+#### Model visualization: Time Series Plot
+
+
+A plot of time series data can reveal a particular time span, during which the certain pattern occurred, which can
+provide additional priceless information needed for the root cause analysis.
+
+
+<br>
+
+##### Displaying a time plot for a particular cluster
+
+
+The following figure depicts a plot for the `ProbeYield` parameter, specifying cluster `C6` for `z` axis. This column
+can be broken into intervals using `zLevel` (applicable for categorical variables). The data&time `x` axis is set to use
+`probeEndData` variable. The main title can also be defined by the user and specified further in the `main` parameter.
+The index of the plotted cluster is disabled for our use (`numMain=F`). In case we want to plot the points as an
+equidistant sequence, we define `sequence=T`, then time intervals are not uniform. If we set this parameter to `FALSE`,
+column `timeCol` will be used for the `x` axis. 
+
+
+```{r}
+# Set legend position to bottomright
+timePlotPar(legend.pos="bottomright") 
+# Plot time plot for `ProbeYield` selecting 'z' variable as 'C6' cluster with 
+# 'probeEndDate' on the `x` axis plotting the points as an equidistant sequence
+timePlot(wbm, ProbeYield, z="C6", zLevel="all", timeCol="probeEndDate", main="C6", 
+			                                                       numMain=F, sequence=T)
+```
+
+
+<br>
+
+##### Displaying multiple time plots for a series of clusters
+
+
+Probe yield time series for all identified clusters can be seen in 6 time plots (grid of 3 rows and 2 columns).
+
+
+```{r fig.width=7, fig.height=10.5, out.width="100%"}
+# Set the viewing settings for subsequent plotting via 'mapPlot' to 3 rows and 2 columns
+par(mfrow=c(3,2))
+for (clust in 1:6) {
+    cluster <- paste0("C", clust)
+    timePlot(wbm, ProbeYield, z=cluster, zLevel="all", timeCol="probeEndDate",
+    			                     main=cluster, numMain=F, sequence=T, showLegend=F)
+}
+```
+
+
+### Performing k-means analysis on wafer bin maps with single bin {#singleBin}
+
+
+In some cases it can be less noisy to perform analysis on wafer bin maps with single bin. Before the model is applied, a
+single bin map is created. In the example below the `bin25` is selected.
+
+
+
+```{r}
+# Create single bin map
+wbm1f <- bin(wbm, c(25))
+# Perform clustering on all wafer bin maps with single bin applying the 'k-means' 
+# method with 6 user defined centroids
+set.seed(42)
+wbm1f <- model(wbm1f, data="map", type="cluster", model="kmeans", centers=6)  
+```
+
+
+#### Viewing model summary 
+
+
+By calling the summary function on the output of the model (stored in the previous step in the variable `wbm1f`), we can
+view the model results summary for the single bin map.
+
+The summary contains all the clusters, as defined in the model function, summarizing number of wafers belonging to
+particular clusters. Information on the particular single bin is also depicted together with the good dice occurrences.
+As mentioned above, in the case of wafer bin maps, `bin0` occurrences represent good dice. `bin1` represents failed dice (in this particular case, dice rejected in `bin25`).
+
+
+```{r}
+summary(wbm1f)
+```
+
+<br>
+
+#### Plotting a heatmap on single bin wbm
+
+
+To visualize clustering results let us plot the heatmaps, where colors correspond to bad die frequency,
+using the `mapPlot` plotting function. In this case, we will plot the heatmap on single bin.
+
+The figure below represents a composite map for a particular cluster.
+
+
+```{r results="hide", fig.width=7, fig.height=10.5, out.width="100%"}
+# Set the viewing settings for subsequent plotting via 'mapPlot' to 3 rows 
+# and 2 columns
+par(mfrow=c(3,2))
+mapPlot(heat(wbm1f))
+
+```
+
+
+<br>
+
+## Saving Maps
+
+
+Saving data with clusters for future work is an important step, because clusters numbering, when clustering is repeated,
+may change. Given the fact that the settings, usernames and file path/name are user and access specific, below example
+is only informative. 
+
+
+```{r eval=FALSE}
+# illustrative example - user specific setting
+saveData(wbm, "demo", user="demo", fileName="demo.all")
+```
+

@@ -1,0 +1,413 @@
+---
+title: "inLabZero: Advanced clustering - PCA"  
+output: rmarkdown::html_vignette 
+vignette: >
+  %\VignetteIndexEntry{inLabZero: Advanced clustering - PCA}   
+  %\VignettePackage{inLabZero}
+  %\VignetteEngine{knitr::rmarkdown}   
+  %\VignetteEncoding{UTF-8} 
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.align="center",
+  fig.width=6, 
+  fig.height=6,
+  out.width="50%",
+  dpi=200,
+  tidy=FALSE
+)
+options(width=80)  
+```
+
+_version: 2020/12_      
+
+
+***
+
+**_note_**: *This document looks into advanced clustering method denoted as Principal component analysis, as a part of the inLabZero package developed by Inference 
+Technologies. For more information on the inLabZero package, please refer to: [inLabZero introduction
+vignette](InLabIntro.html)*        
+            
+***
+
+
+## Advanced clustering - Principal component analysis              
+
+Clustering (or cluster analysis) divides data into groups, called **clusters**. Objects belonging to the same group are in a sense more similar to each other than objects present in other groups (clusters). Cluster analysis can be achieved by applying various algorithms, which use different approaches to cluster constitution, having also distinct efficacy in cluster detection. [Basic Clustering vignette](BasicClustering.html) provides an introduction to cluster analysis. In this vignette, we extend this topic and dive deeper into advanced clustering using the Principal component analysis. 
+
+In machine learning, large and concise datasets are used for machine training, which leads to building a better predictive model, as there is more data available for training. However, the use of large datasets represents a pitfall because of its *dimensionality*, leading to increased computation time related to lots of redundant features or their inconsistencies in the dataset. Smaller dimensionality datasets make the data analysis process easier and faster, as they are easier to visualize and explore. 
+
+A process called **dimensionality reduction** has been introduced to reduce the dimensionality of large datasets, by transforming a large set of variables into a smaller one, while preserving most of the information from the large set. **Principal components analysis (PCA)** is a dimensionality reduction technique, which enables to identify patterns and correlations in a dataset with the aim to transform it into a dataset of a significantly lower dimension without loss of any important information. The Principal component analysis consists of the following five main steps: (1) standardization of the data, (2) covariance matrix computation, (3) eigenvectors and eigenvalues calculation, (4) Principal Components calculation, (5) reduction of the dataset dimensions.
+
+PCA is very sensitive regarding the variances of the initial variables (variables with larger ranges dominate over variables with smaller ranges), it is thus crucial to standardize the range of the continuous initial variables in the first step, so that each of them contributes equally. As mentioned before, the main idea behind PCA lies in identifying correlations and dependences among features in the dataset. Correlation between particular variables in a dataset is expressed via a **covariance matrix**, which represents a table that summarizes the correlations between all the possible pairs of variables. This is very important, because variables that are very dependent contain redundant and biased information, which decreases the model performance. **Principal Components** are calculated using the Eigenvectors and Eigenvalues (variances) extracted from the covariance matrix. The information on the biggest amount of variance in data is taken into account. 
+
+As such, principal components are new variables that are created as linear combinations or mixtures of the initial variables. They are constructed in such a way, that they are highly mutually independent (orthogonal, i.e. they have zero covariations) and significant, while compressing most of the initial information into the first component, then maximum of the remaining information into the second etc. Speaking in terms of geometry, principal components represent the directions of the data that explain a *maximal amount of variance* (lines that capture most information of the data). Finally, the original data is rearranged with the calculated principal components that represent the maximum and the most significant information of the dataset. 
+ 
+
+The following **topics related to the inLabZero package** are documented:     
+
+1. [PCA dimensionality reduction and clustering on `wbm` dataset](#section1) 
+2. [PCA dimensionality reduction and combined clustering on `pcy` and `wbm` datasets](#section2)
+
+<br>
+
+### 1. PCA dimensionality reduction and clustering on `wbm` dataset {#section1} 
+
+<br>
+
+#### Dimensionality reduction and PCA model on `wbm` 
+
+First part of this vignette focuses on PCA dimensionality reduction and clustering on wafer bin maps. The PCA dimensionality reduction can by applied on `wbm` with all bins or on single bin maps `wbm1f`. In our example we will combine bins 2, 3, 5, 15, 23 and 25 into bin 1 and clear all other bins to create `wbm1f`.  
+
+```{r}
+library(inLabZero)  
+```
+```{r echo=FALSE}
+```
+```{r echo=FALSE}
+mapPlotPar(default)
+modelPlotPar(default)
+``` 
+
+
+```{r echo=FALSE}
+data(pcy)
+data(wbm)
+```
+
+
+```{r echo=FALSE}
+# Remove original clusters from `wbmC` object 
+wbm <- variable(wbm, c("clear", "center", "edge"), NULL, "C")
+pcy <- variable(pcy, c("clear", "center", "edge"), NULL, "C")
+```
+
+```{r results="hide"}
+# Create single bin map
+wbm1f <- bin(wbm, c(2,3,5,15,23,25), 1)     
+```
+
+The inLabZero package features the function `model` as the models wrapper to perform not only regression and classification, but also clustering and dimensionality reduction. Please refer to the help of this function for more details using `?model` in the console after inLabZero library load. The type of the model is specified via the `type` parameter, which needs to be set to `dim` for dimensionality reduction. The particular model used is defined via the `model` parameter. Setting this parameter to `pca` will set the model to Principal Component Analysis.
+ 
+```{r results="hide"}
+# Perform Principal Component Analysis
+wbmPCA <- model(wbm1f, type="dim", model="pca", seed=42)  
+```
+
+In order to view the model outcome, the `modelPlot` function is applied on the `wbmPCA`, which stores the model results for single bin maps. The parameter `first` specifies the first `n` most important parameters to display. To ease clutter of the plot and showing parameters that bear the most significance, we will show first 20 Principal Components, using the `first` parameter.  
+
+```{r results="hide"}
+# Show % of data variance explained by Principal Components
+modelPlot(wbmPCA, first=20)  
+```
+
+<br>
+
+The inLabZero function `summary` shows various model summaries, depending on the argument. When applied on the `wbmPCA` object containing the PCA model outcome, a summary table for Principal Components is depicted. There are three type of information shown in the table: *standard deviation*, *proportion of variance* and *cumulative proportion*. 
+
+The first row defines the standard deviation of the data along the particular PCA, in other words, it depicts the measure of variability across that PCA. The proportion of variance shown for particular Principal Components means the overall variability of the original data explained. In our case, 12.4% of the original data variability is explained by PCA1, 4.8% of the data variability is explained by PCA2 etc. Similarly, with regards to cumulative proportion, PCA1, PCA2 and PCA3 cumulatively explain 18.7% of the variability in our data. Hence, the first 20 Principal components shown in this summary explain 33,7% of variability in our data.
+
+```{r}
+# Show summary for `wbm` object with first 20 Principal Components
+summary(wbmPCA, first=20)
+```
+
+<br>
+
+#### Cluster analysis on first 300 principal components  
+
+ We will perform the cluster analysis on the first 300 principal components. 
+The `formula` parameter characterizes the response parameter and the input parameters, which we will define as a string of characters `map1` up to `map300` joined via `+` using the following call:
+
+
+```{r results="hide"}
+# Define standard input formula
+formula <- paste("~", paste(paste0("map", 1:300), collapse="+"))
+```
+
+Now that we have stored the outcome of the dimensionality reduction PCA model in the `wbmPCA` object, we can apply the `model` function to it, this time setting the `type` parameter to `cluster` for cluster model specification and parameter `model` to `kmeans`, defining K-Means Clustering. The number of clusters is set to 6 (parameter `centers`). 
+
+
+```{r results="hide"}
+# Perform clustering on all wafer bin maps applying the 'k-means' method with 6
+# user defined centroids
+wbmPCAkmeans <- model(wbmPCA, type="cluster", model="kmeans", formula=formula, 
+                                                   centers=6, seed=42)
+```
+
+ Each dataset consists of particular groups of variables, called data types. The list of an object's data types is accessed via the `dataType` function, which is part of the inLabZero package. If we look at the dataTypes of `wbmPCAkmeans`, we will obtain the following:
+
+```{r}
+# Get groups of variables present in `wbmPCAkmeans` 
+dataType(wbmPCAkmeans)
+```
+
+The `wbmPCAkmeans`, consists of the groups of variables shown in the table below. It comprises *yield variables*, *meta parameters*, *lot equipment history parameters* and *cluster variables* . 
+
+<br>
+
+```{r table1, echo=FALSE, message=FALSE, warnings=FALSE, results='asis'}
+tabl <- " 
+| List acronym             | Groups of variables' description              |
+|--------------------------|-----------------------------------------------|
+| Y                        | Yield variables                               |   
+| META                     | Meta parameters                               |
+| LEH                      | Lot equipment history parameters (at probe)   |
+| C                        | Cluster variables                             |  
+"
+cat(tabl) 
+```
+
+<br>
+
+After applying the K-means clustering model with 6 centers to the `wbmPCA` object, object `wbmPCAkmeans` will now contain 6 clusters: `C1`, `C2`, `C3`, `C4`, `C5` and `C6`. In the next step, we will move the calculated clusters `C1`, `C2`, `C3`, `C4`, `C5` and `C6` from `wbmPCAkmeans` to single bin maps, `wbm1f`. The inLabZero package contains the `transfer` function, which enables transferring data between different datasets. We will use this function to copy the cluster variables from `wbmPCAkmeans` to `wbm1f` (note: "C" defines cluster variable data type). 
+
+
+```{r results="hide"}
+# Transfer clusters from 'wbmPCAkmeans' to 'wbm1f'  
+wbmC <- transfer(wbmPCAkmeans, wbm1f, "C") 
+```
+
+
+Using the `dataType` function, we can inspect the available data types of the new `wbmC` object. As can be seen, clusters `C1` to `C6` were added. 
+
+```{r}
+# Get groups of variables present in `wbmC` 
+dataType(wbmC)
+```
+
+The `wbmC`, consists of the same groups of variables as `wbmPCAkmeans`. It comprises *yield variables*, *meta parameters*, *lot equipment history parameters* and *cluster variables* .   
+
+
+
+<br>
+
+#### Viewing heatmaps
+
+
+To visualize clustering results let us plot the heatmaps, where colors correspond to bad die frequency, using the `mapPlot` plotting function. In this case, we will plot the heatmap on single bin.
+
+The figure below represents a composite map for a particular cluster. 
+
+
+```{r results="hide", fig.width=7, fig.height=10.5, out.width="100%"}
+par(mfrow=c(3,2))
+wbmHeat <- heat(bin(wbmC, "all", 1))
+# Plotting a heatmap on all bins
+mapPlot(wbmHeat) 
+```
+
+
+<br>
+
+### 2. PCA dimensionality reduction and combined clustering on `pcy` and `wbm` datasets {#section2} 
+
+
+<br>
+
+#### Dimensionality reduction and PCA model on `pcy` 
+
+
+Before dimensionality reduction is applied, we use the `unfoldCol` function, which unfolds a specified column horizontally into groups of variables. For our demonstration purposes, we will unfold the siteid column to create a group of PC parameters for each siteid using the call below. The `key` parameter specifies the merging key, which we choose to be the `lotWafer` parameter. We define the datatype as `PC` specifying that the variables we will be working with are of PC parameter data type. The `lotWaferSiteid` column is discarded. 
+
+
+```{r echo=FALSE}
+data(pcy)
+data(wbm)
+```
+
+```{r echo=FALSE}
+# Remove original clusters from `wbmC` object 
+wbm <- variable(wbm, c("clear", "center", "edge"), NULL, "C")
+pcy <- variable(pcy, c("clear", "center", "edge"), NULL, "C")
+```
+
+
+```{r results="hide"}
+# Unfold siteid column to create a group of PC params for each siteid
+pcyUnfold <- unfoldCol(pcy, "siteid", key="lotWafer", dataType="PC", 
+                                              discardCol="lotWaferSiteid") 
+```
+
+PC parameters are now unfolded for each siteid, e.g. `3_PARAM04` stands
+for parameter `PARAM04` corresponding to siteid 3. 
+
+Since we have used the `lotWafer` parameter as the merging key, we can now inspect the unfolded parameters at wafer level. Once again, for better clarity, we will not show all the parameters and reveal only those that are important for the topic demonstration. From the unfolded parameters, we show the first and last parameter for each particular siteid. 
+
+```{r echo=FALSE}
+# Subsetting only columns of interest for clarity
+pcyUnfold2 <- pcyUnfold$tab[,c("lotWafer", "part", "siteid", "UPYield", "ProbeYield", "PCMYield", "ProbeYieldSys", "ProbeYieldRnd", 
+ "1_PARAM01", "1_PARAM91", "2_PARAM01", "2_PARAM91", "3_PARAM01", "3_PARAM91", "4_PARAM01", "4_PARAM91", "5_PARAM01", "5_PARAM91")]
+```
+
+ 
+```{r eval=FALSE}
+pcyUnfold
+```
+
+
+```{r echo=FALSE}
+pcyUnfold2
+```
+
+We will perform dimensionality reduction on unfolded PC parameters using the `model` function with the application of the Principal component analysis model. 
+
+
+```{r results="hide"}
+# Perform Principal Component Analysis
+pcyUnfoldPCA <- model(pcyUnfold, type="dim", model="pca", seed=42) 
+```
+
+Running the PCA model will add Principal Components to the `pcyUnfoldPCA` object, data type `DR`. 
+For viewing the first 20 Principal components of the model outcome, the `modelPlot` function is applied. Judging from the plot, 25% of the original data is explained by PCA1.
+
+```{r results="hide"}
+# Show % of data variance explained by Principal Components
+modelPlot(pcyUnfoldPCA, first=20)  
+```
+
+<br>
+
+
+#### Dimensionality reduction and PCA model on `wbm` 
+
+
+Analogically to the first section of this vignette, we will start by creating wafer bin maps with single bin. We will combine bins 2, 3, 5, 15, 23 and 25 into bin 1 and clear all other bins and store the result in `wbm1f` object.
+
+
+```{r results="hide"}
+# Create single bin map
+wbm1f <- bin(wbm, c(2,3,5,15,23,25), 1)  
+``` 
+
+In the following step, the PCA dimensionality reduction model is run saving the model outcome into the `wbmPCA` object. 
+
+```{r results="hide"}
+# Perform Principal Component Analysis
+wbmPCA <- model(wbm1f, type="dim", model="pca", seed=42)
+```
+
+The first 20 model Principal Components are plotted:
+
+```{r results="hide"}
+# Show % of data variance explained by Principal Components
+modelPlot(wbmPCA, first=20) 
+```
+
+
+<br>
+
+#### Combined Principal Components for `pcy` and `wbm`
+
+The first principal components are constructed in a way that they account for the largest possible variance in the dataset and hold the most of the initial information. The aim of the next steps is to combine relevant information from `pcy` and `wbm` into one object, `pcyWbmCombined`. 
+
+The process will be covered in the following few steps.
+
+The names of the first 5 Principal Components of `pcyUnfoldPCA` are selected in a string `PCsub`:
+
+```{r results="hide"}
+# Create string to hold names of the first 5 Principal Components
+PCsub <-paste0("PC",1:5)
+```
+
+Using the `transfer` function, we move the first 5 Principal Components from `pcyUnfoldPCA` to `pcyUnfold` and store the result into `pcyWbmCombined`.
+
+```{r results="hide"}
+# Transfer first 5 PCA from 'pcyUnfoldPCA' to 'pcyUnfold'  
+pcyWbmCombined <- transfer(pcyUnfoldPCA, pcyUnfold, PCsub)
+```
+
+The `wbmPCA` object stores the principal components, which we now transfer to `pcyWbmCombined`.  
+
+
+```{r results="hide"}
+# Transfer PCA from 'wbmPCA' to 'pcyWbmCombined'  
+pcyWbmCombined <- transfer(wbmPCA, pcyWbmCombined, 1:300, fromData="map", 
+                                                              toDataType="DR")
+```
+
+The `dataType` function reveals the groups of variables available in the `pcyWbmCombined` object. 
+
+```{r}
+# Get groups of variables present in `pcyWbmCombined` 
+dataType(pcyWbmCombined) 
+```
+
+This object consists of the groups of variables shown in the table below. It comprises *dimensionality reduction variables*,  *meta parameters*, *PCM parameters* and *yield variables*.
+<br>
+
+```{r table3, echo=FALSE, message=FALSE, warnings=FALSE, results='asis'}
+tabl <- " 
+| List acronym             | Groups of variables' description              |
+|--------------------------|-----------------------------------------------|
+| DR                       | Dimensionality reduction variables            |
+| META                     | Meta parameters                               |
+| PC                       | PCM parameters                                | 
+| Y                        | Yield variables                               |    
+"
+cat(tabl) 
+```
+
+<br>
+
+To ease the clutter, we are showing a subset of variables, relevant for the topic demonstration.
+
+```{r eval=FALSE}
+pcyWbmCombined
+```
+
+```{r echo=FALSE}
+# Subsetting only columns of interest for clarity
+pcyWbmCombined2 <- pcyWbmCombined$tab[,c("lotWafer", "part", "siteid", "UPYield", 
+  "ProbeYield", "PCMYield", "ProbeYieldSys", "ProbeYieldRnd", "1_PARAM01", "1_PARAM91",
+   "2_PARAM01", "2_PARAM91", "3_PARAM01", "3_PARAM91", "4_PARAM01", "4_PARAM91",
+    "5_PARAM01", "5_PARAM91", "PC1", "PC2", "PC3", "PC4", "PC5", "map1", "map300")]
+pcyWbmCombined2 
+```
+
+<br>
+
+#### Clustering on combined Principal Components for `pcy` and `wbm`
+
+
+Let us run K-means clustering on the `pcyWbmCombined` object that we have constructed in the previous steps using a combination `pcy` and `wbm` Principial Components. 
+
+```{r results="hide"}
+# Perform clustering on 'pcyWbmCombined' using the 'k-means' method with 6
+# user defined centroids
+pcyWbmCombined <- model(pcyWbmCombined, type="cluster", model="kmeans", centers=6, 
+                                                       dataType="DR", seed=42)
+```
+
+The K-means algorithm has identified clusters: `C1`, `C2`, `C3`, `C4`, `C5` and `C6`. For visualization, we need to move these clusters to the single bin map object `wbm1f` and save the results in `wbmC`. 
+
+
+
+```{r results="hide"}
+# Transfer clusters from 'pcyWbmCombined' to 'wbm1f'  
+wbmC <- transfer(pcyWbmCombined, wbm1f, "C")
+```
+
+<br>
+
+### Viewing heatmaps 
+
+
+To see the clustering results, we apply the `mapPlot` on the heatmaps. The figure below represents a composite map for a particular cluster. 
+
+```{r results="hide", fig.width=7, fig.height=10.5, out.width="100%"}
+par(mfrow=c(3,2))
+wbmHeat <- heat(bin(wbmC, "all", 1))
+# Plotting a heatmap on all bins
+mapPlot(wbmHeat)
+```
+
+
+
+
+
+
+

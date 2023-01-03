@@ -1,0 +1,203 @@
+---
+title: "inLabZero: Map Browsing"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{inLabZero: Map Browsing}
+  %\VignettePackage{inLabZero}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.align="center",
+  fig.width=6, 
+  fig.height=6,
+  out.width="50%",
+  dpi=200,
+  tidy=FALSE
+)
+options(width=80)
+```
+
+_version: 2020/01_
+
+
+***
+
+**_note_**: *This document presents various ways of map browsing, as a part of the inLabZero package developed by
+Inference Technologies. For more information on the inLabZero package, please refer to: [inLabZero introduction
+vignette](InLabIntro.html)*   
+
+***
+
+
+## Various ways of map browsing
+
+During the issue identification process, we can make use of plots that give us better insight into the problem and
+pattern localization helps to identify the origin of the underlying problem.
+
+There are various ways to tweak the map plot viewing options, which will be demonstrated below.
+
+
+
+<br>
+
+### Map Browser
+
+In order to view a particular map, we call the `mapPlot` function on the wafer bin map dataset, as demonstrated below. 
+
+While displaying more than 1 map, the browsing mode is entered. For help, input `[h]` during browsing. 
+
+The *browser options* comprise (don't include the quotation marks):
+
+<ul>
+<li><strong>[enter]</strong>: next</li>
+<li><strong>"5"</strong>: go next 5 steps</li>
+<li><strong>"-"</strong>: go one step back</li>
+<li><strong>"-3"</strong>: go 3 steps back</li>
+<li><strong>"auto"</strong>: autobrowsing</li>
+<li><strong>"x"</strong>: exit</li>
+</ul>
+
+
+```{r}
+library(inLabZero)
+```
+
+```{r eval=FALSE}
+mapPlot(wbm)
+```
+
+```{r echo=FALSE}
+mapPlotPar(default)
+```
+
+```{r echo=FALSE, results="hide"}
+data(wbm)
+
+mapPlot(wbm[1], numMain=T)
+```
+
+
+
+<br>
+
+### Specifying (multiple) maps for viewing
+
+
+Using the `wbm[1:100]` call, we can specify multiple maps for viewing. This command plots wafer maps  corresponding to
+rows 1 to 100, in the browsing mode (figure below depicts map corresponding to row 1). 
+
+Parameter `numMain` enables to include index of the plotted row in the main title.
+
+
+```{r, eval=FALSE}
+mapPlot(wbm[1:100], numMain=T)
+```
+
+```{r, echo=FALSE, results="hide"}
+mapPlot(wbm[1], numMain=T)
+```
+
+
+<br>
+
+### Map browsing in a lot
+
+It can be useful to browse through maps belonging to a specific lot. This can be specified by using the
+`wbm[lot=="LOT005"]` call (in this case, maps corresponding to lot `LOT005` are selected for browsing).
+
+```{r eval=FALSE}
+mapPlot(wbm[lot=="LOT005"]) 
+```
+```{r echo=FALSE, results="hide"}
+mapPlot(wbm[lot=="LOT005"][1]) 
+```
+
+
+<br>
+
+### Selection of map by lot and wafer number
+
+
+It is possible to select wafer map by lotWafer parameter `lotWafer=="LOT005-W08"` (combination of the lot and wafer
+number). 
+
+The use of the `subMain` parameter enables to specify the particular information to be plotted below the map. In our
+case, it is the probe end date.
+
+
+```{r eval=FALSE}
+mapPlot(wbm[lotWafer=="LOT005-W08"], subMain="probeEndDate") 
+```
+```{r echo=FALSE, results="hide"}
+mapPlot(wbm[lotWafer=="LOT005-W08"][1], subMain="probeEndDate") 
+```
+
+
+<br>
+
+### Map browsing in a cluster
+
+
+Selection of wafers belonging to cluster `edge` is done via the `wbm[edge>0]` call (figure below depicts map
+corresponding to row 1).
+
+
+```{r eval=FALSE}
+mapPlot(wbm[edge>0], numMain=T)
+```
+```{r echo=FALSE, results="hide"}
+mapPlot(wbm[edge>0][1], numMain=T)
+```
+
+
+<br>
+
+### Comparison of a single bin map in a cluster to an all bin map
+
+Once we have created a single bin map, via `wbm1f <- bin(wbm, c(25))`, we can compare it to an all bin map, for a
+particular cluster of interest. In this case, for the single bin map on the left, `bin1` represents failed dice (here:
+dice rejected in `bin25`). 
+
+
+```{r eval=FALSE}
+# Create single bin map
+wbm1f <- bin(wbm, c(25))
+mapPlot(wbm1f[edge>0], wbm)
+
+```
+```{r echo=FALSE, results="hide", fig.width=14, fig.height=7, out.width="100%"}
+wbm1f <- bin(wbm, c(25))
+mapPlot(wbm1f[edge>0][1], wbm[1])
+```
+
+<br>
+
+### Editing maps in a cluster
+
+The function option `edit=TRUE` enables to edit maps in a particular cluster. During this mode, the user can add wafer
+to the cluster, move wafer from particular cluster to another cluster or delete wafer from all clusters.
+
+
+Available *browser options* in this mode:
+
+<ul>
+<li><strong>add cluster:</strong> add a specific wafer to a particular cluster </li>
+<li><strong>move cluster:</strong> move a specific wafer to a particular cluster</li>
+<li><strong>del:</strong> delete wafers from all clusters</li>
+</ul>
+
+```{r eval=FALSE}
+mapPlot(wbm, cluster=edge, edit=TRUE)
+```
+```{r echo=FALSE, results="hide"}
+mapPlot(wbm[1],  cluster=edge, edit=TRUE)
+```
+
+
+
+

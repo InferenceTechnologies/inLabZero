@@ -1,0 +1,221 @@
+---
+title: "inLabZero: Bin pareto plot"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{inLabZero: Bin pareto plot}
+  %\VignettePackage{inLabZero}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}  
+---
+
+```{r, include = FALSE} 
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.align="center",
+  fig.width=6, 
+  fig.height=6,
+  out.width="50%",
+  dpi=200,
+  tidy=FALSE
+)
+options(width=80) 
+```
+
+_version: 2020/07_  
+
+
+***
+
+**_note_**: *This document looks into Bin pareto plot, as a part of the inLabZero package developed by Inference Technologies. For more  information on the inLabZero package, please refer to: [inLabZero introduction vignette](InLabIntro.html)*             
+ 
+***
+
+
+## Data visualization 
+
+Data visualization refers to presenting data in a graphical form. It is a unique tool for assessing relationships between attributes, spotting outliers or potential issues, evaluation of model performance and can even provide an idea for possible data transformations that need to be applied.  
+
+In this vignette, the following inLabZero **topics related to Bin pareto plot visualization** are documented:
+
+1. [Bin plot - `binPlot`](#section1) 
+2. [Bin plot visual parameters - `binPlotPar`](#section2) 
+
+
+<br>
+
+### 1. Bin plot - `binPlot` {#section1} 
+
+
+
+A **Pareto diagram** is a bar chart that ranks related measures in decreasing order of importance. In the **bin pareto chart** the bars represent contribution to yield loss by a particular bin.  The line represents the cumulative % of yield loss explained. The purpose of this graph is to highlight the bins with the greatest % of yield loss.
+
+The plot is created using the inLabZero function `binPlot`  applied on the wafer bin map, `wbm` (corresponding to parameter obj). If clusters are present, browsing is initiated.
+
+Let us plot **bin pareto for all maps and all bins** using the following call (figure below depicts bin pareto for all maps). 
+
+
+```{r}
+library(inLabZero)  
+```
+
+```{r echo=FALSE}
+data(wbm)
+```
+
+```{r echo=FALSE}
+binPlotPar(default) 
+```
+
+```{r eval=FALSE}
+# Plot bin pareto for all maps and all bins
+binPlot(wbm)
+```
+
+```{r echo=FALSE, results="hide"}
+# Plot bin pareto for all maps and all bins
+wbm1 <- wbm[,-c("clear", "edge","center")]
+binPlot(wbm1)
+```
+
+<br>
+
+
+In this case, browsing mode is entered, where the first plot depicts pareto for all maps and subsequent plots browse through individual clusters, if present. For help, type `h` during browsing. 
+
+For example (don't include the quotation marks):
+
+<ul>
+<li><strong>[enter]</strong>: next</li>
+<li><strong>"2"</strong>: go next 2 steps</li>
+<li><strong>"-"</strong>: go one step back</li>
+<li><strong>"-2"</strong>: go 2 steps back</li>
+<li><strong>"auto"</strong>: autobrowsing</li>
+<li><strong>"x"</strong>: exit</li>
+</ul>
+
+<br>
+
+It is also possible to plot **bin pareto for all maps and specific bins**, by specifying the bin numbers in the `bins` parameter. For all available bins, use the keyword "all" or leave this parameter unassigned, as it is the default setting.
+
+```{r eval=FALSE}
+# Plot bin pareto for all maps and bins 1 to 16
+binPlot(wbm, bins=c(1:16))
+```
+
+```{r echo=FALSE, results="hide"}
+# Plot bin pareto for all maps and bins 1 to 16 
+binPlot(wbm1, bins=c(1:16))
+```
+
+<br>
+
+For cluster browsing, input cluster name in the `cluster` parameter. The example below demonstrates bin plot for cluster `edge`. 
+
+
+```{r}
+# Browsing through cluster 'edge'  
+binPlot(wbm, bins="all", cluster="edge")
+```
+
+
+<br> 
+
+<br>
+
+##### main
+
+
+The main title can be added via the **`main`** parameter.
+
+```{r eval=FALSE}
+# Add graph title
+binPlot(wbm, main="binPlot")
+```
+
+```{r echo=FALSE, results="hide"}
+# Browsing through the 'edge' cluster for all available bins
+binPlot(wbm1, main="binPlot")
+```
+
+<br> 
+
+<br>
+
+##### plot
+
+
+If the `plot` parameter is set to `FALSE`, list of bin pareto percentages is returned instead of the plot. By default, this parameter is set to `TRUE`.
+
+There are several display options. In the following example, list of bin pareto percentages for all maps as well as for each particular cluster is returned.
+
+```{r}
+# Return list of bin pareto percentages for all maps as well as for each cluster separately
+binPlot(wbm, plot=FALSE)
+```
+
+When using the `$all` option, we will obtain only the list of bin pareto percentages for all maps.
+
+```{r}
+# Return list of bin pareto percentages for all maps
+binPlot(wbm, plot=FALSE)$all
+```
+
+We can also specify a particular cluster, using the `$edge` option, as depicted in the following call:
+
+```{r}
+# Return list of bin pareto percentages for the 'edge' cluster
+binPlot(wbm, plot=FALSE)$edge
+```
+
+
+<br>
+
+### 2. Bin plot visual parameters - `binPlotPar` {#section2}  
+
+The **`binPlotPar`** function enables to get, set and reload default visual parameters of the `binPlot`. For a detailed list of all parameters that are available, see `?binPlotPar`. Use parameter names to get values, use assignment to set parameter values and use keyword `default` to load default values. Let us look at some of the most used parameters and their usage. In order to see the effect on the `binPlot`, the `binPlotPar` needs to be run before the `binPlot` is plotted.  
+
+
+
+<br> 
+
+
+#### colors.border
+
+To get the value of a visual parameter, in our case, cumulative line color, use: 
+
+```{r}
+# Get value of the cumulative line color
+binPlotPar(colors.line)
+```
+
+<br>
+
+#### colors.box
+
+Parameter **`colors.box`**  can be used to set the bar color, in this case, let's set the bar color to green:
+
+```{r eval=FALSE}
+# Set bar color to 'green'
+binPlotPar(colors.box="green")
+```
+
+```{r echo=FALSE, results="hide"}
+binPlotPar(colors.box="green")
+binPlot(wbm1)
+```
+
+
+<br> 
+
+In case that we have changed the visual parameters and we want to reload the default settings, the following call can be applied: 
+
+```{r}
+# Reload default visual parameters
+binPlotPar(default) 
+```
+
+
+
+
+

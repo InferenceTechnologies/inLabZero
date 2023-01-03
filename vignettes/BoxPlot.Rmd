@@ -1,0 +1,416 @@
+---
+title: "inLabZero: Box plot"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{inLabZero: Box plot}
+  %\VignettePackage{inLabZero}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}   
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set( 
+  collapse = TRUE,
+  comment = "#>",
+  fig.align="center",
+  fig.width=6, 
+  fig.height=6,
+  out.width="50%",
+  dpi=200,
+  tidy=FALSE
+)
+options(width=80)   
+```
+
+_version: 2020/05_    
+
+
+***
+
+**_note_**: *This document looks into Box plot, as a part of the inLabZero package developed by Inference Technologies. For more  information on the inLabZero package, please refer to: [inLabZero introduction vignette](InLabIntro.html)*              
+ 
+***
+
+
+## Data visualization    
+
+Data visualization refers to presenting data in a graphical form. It is a unique tool for assessing relationships between attributes, spotting outliers or potential issues, evaluation of model performance and can even provide an idea for possible data transformations that need to be applied.  
+
+In this vignette, the following inLabZero **topics related to Box plot visualization** are documented:  
+
+1. [Box plot - `boxPlot`](#section1) 
+2. [Box plot visual parameters - `boxPlotPar`](#section2)   
+
+
+<br>
+
+### 1. Box plot - `boxPlot` {#section1}  
+
+A box plot is a standardized way of displaying the distribution of data based on a five number summary: *minimum*, *first quartile (Q1)*, *median*, *third quartile (Q3)*, and *maximum*. It is useful for: providing information on the variability or dispersion of the data, telling the values of the outliers, identifying if data is symmetrical, determining how tightly data is grouped and if or how the data is skewed. 
+
+A box plot is created using the inLabZero function `boxPlot`. The function can be applied on the process control dataset, `pcy` (corresponding to parameter `obj`). The parameters for plotting are specified either as variable indexes (*integer*) or as variable names (*character*).  
+
+<br>
+
+#### Specification of the input parameter for plotting  
+
+Let us look on two different ways to specify parameters with the same result output (1 graph will be shown for demonstration). The first corresponds to the case, where the parameters to be plotted are specified via a *variable index* (10th variable versus 18th variable), the second uses a *variable name* for parameter specification (non-quoted strings can be used).  
+
+```{r}
+library(inLabZero)  
+```
+
+```{r echo=FALSE}
+data(pcy)
+```
+
+```{r echo=FALSE}
+boxPlotPar(default)
+modelPlotPar(default)
+```
+
+```{r eval=FALSE}
+# Plot 10th versus 18th variable from the group
+boxPlot(pcy, 10, 18)
+```
+
+```{r}
+# Plot 10th versus 18th variable from the group
+boxPlot(pcy, PARAM10, PARAM18)
+```
+
+<br> 
+<br> 
+
+It is also possible to plot a sequence of variables. The two examples below demonstrate possible input options. First variable is used for `x` axis. In this case browsing mode is entered. For help, type `h` during browsing. 
+
+For example (don't include the quotation marks):
+
+<ul>
+<li><strong>[enter]</strong>: next</li>
+<li><strong>"5"</strong>: go next 5 steps</li>
+<li><strong>"-"</strong>: go one step back</li>
+<li><strong>"-3"</strong>: go 3 steps back</li>
+<li><strong>"auto"</strong>: autobrowsing</li>
+<li><strong>"x"</strong>: exit</li>
+</ul>
+
+```{r eval=FALSE}
+# Plotting a sequence of variables
+boxPlot(pcy, 10, c(26:30))
+```
+
+```{r eval=FALSE}
+# Plotting a sequence of variables
+boxPlot(pcy, 10, PARAM80:last)
+```
+
+<br>
+
+##### numMain
+
+Parameter **`numMain`** enables to include/exclude index of the plotted variable in the main title. It is set to `TRUE` by default, the parameter index is excluded in this example.
+
+```{r}
+# Plot PARAM10 variable versus PARAM18 variable from the group
+boxPlot(pcy, PARAM10, PARAM18, numMain=F)
+```
+
+<br> 
+
+##### outlier
+
+An important part of data analysis consists in outlier filtering. Parameter **`outlier`** is applied for filtering of variable before plotting. Outliers are data points outside the interval: `<(Q1 - kl * IQR), (Q3 + kr * IQR)>`, where `Q1` and `Q3` are quartiles, `IQR` is interquartile range and `k1` and `k2` are values specified by outlier parameter as its first and second element. If single value is provided, `k1` = `k2` setting is used. No outlier filtering is applied by default. 
+
+
+```{r}
+# Plot PARAM10 variable versus PARAM18 variable with outlier filtering 
+boxPlot(pcy, PARAM10, PARAM18, outlier=3, numMain=F)
+```
+
+<br> 
+<br> 
+
+The next couple of examples are divided into two sections based on whether the `z`- axis is numerical or categorical along with the usage of several other `boxPlot` arguments selected based on the `z`- axis type.
+
+<br>
+
+#### `boxPlot` argument settings for numerical `z`- axis
+
+Parameter **`z`** specifies the variable for the `z` axis. For a numerical `z`- axis, this variable can be broken into intervals. Subsets of variable corresponding to `z` variable breaks are then plotted with different colors.
+
+```{r}
+boxPlotPar(legend.pos="bottomright")
+# Select numerical z variable with input by name
+boxPlot(pcy, PARAM10, PARAM18, z="ProbeYield", outlier=3, numMain=F)
+```
+
+<br> 
+
+##### zBr
+
+Parameter **`zBr`** breaks of a numeric `z` variable. Single integer value determines number of breaks. This parameter can also be specified as a vector and it can be numerical, character or date in a POSIXct class, then it represents interval breaking points. It is also possible to use special character values `min`, `mean`, `median` and `max`. 
+
+```{r}
+# Break numerical variables into intervals: keywords seq, min, max together with values
+boxPlot(pcy, 10, 18, z="ProbeYield", zBr=c("min",seq(60,95,5),"max"), outlier=3, numMain=F)
+```
+
+<br> 
+
+##### zBrMethod
+
+The **`zBrMethod`** parameter defines the split methods and it works in conjunction with the `zBr` setting. The following split methods can be used:
+**`median`** (breaks `z` variable with `median`), **`mean`** (breaks `z` variables with `mean`), **`thr`** (breaks `z` variable with threshold value specified by `zBr`), **`yieldHeat`** (corresponds to `zBr=c("seq(min,median,length.out=brValue)","max")`, where `brValue` is the value specified by `zBr`), **`linear`** (breaks `z` variable into equidistant intervals; number of splits is given by `zBr`). The following call uses the `linear` option as the `zBrMethod`: 
+
+```{r}
+# Plot box plot with 'linear' option as the zBrMethod
+boxPlot(pcy, PARAM10, PARAM18, z="PARAM14", zBr=10, zBrMethod="linear", outlier=3, numMain=F)
+```
+
+<br> 
+
+##### zOutlier
+
+In order to filter out outliers corresponding to the `z` variable, that would distort the real range of the variable, the `zOutlier` parameter can be applied. Parameter **`zOutlier`** is an adaptation of the `outlier` parameter for outliers filtering of the `z` variable before plotting.   
+
+To *combine multiple plots into one overall graph* we can use function **`par()`** and include the option **`mfrow=c(nrows, ncols)`**. 
+
+```{r fig.height=10.5}
+par(mfrow=c(2,1)) 
+# Plot box plot with input by name
+boxPlot(pcy, PARAM10, PARAM18, z="PCMYield", zBr=5, zBrMethod="linear", numMain=F)
+# Plot box plot with outlier filtering option
+boxPlot(pcy, PARAM10, PARAM18, z="PCMYield", zBr=5, zBrMethod="linear", zOutlier=2, numMain=F)
+```
+
+```{r echo=FALSE}
+par(mfrow=c(1,1))   
+```
+
+```{r echo=FALSE}
+boxPlotPar(default)
+```
+
+<br>
+
+##### Date type `z` variable
+
+The following example shows the use of the `zBr` parameter specified as POSIXct class to demonstrate date type `z` variable.
+
+```{r}
+boxPlotPar(legend.pos="topleft")
+# Define date type z variable
+boxPlot(pcy, 10, 18, z="pcStartDate", 
+        zBr=as.POSIXct(c("2015/10/01", "2016/06/01", "2016/10/01")), outlier=3)
+```
+
+
+<br>
+
+#### `boxPlot` argument settings for categorical `z`- axis
+
+
+Categorical `z`- axis can be broken into intervals using the **`zLevel`** parameter (*note*: In order to *include all levels*, use special value `zLevel="all"`). Subsets of variable corresponding to `z` variable breaks are then plotted with different colors. For a categorical `z`- axis, the `zLevel` parameter is non-null. It specifies which categories to use for split.  
+
+```{r}
+# Select categorical z variable with input by name and define z-axis breaking intervals
+boxPlot(pcy, PARAM10, PARAM18, z="center", zLevel=c(0,1), outlier=3, numMain=F)
+```
+
+
+<br>
+
+##### xBr 
+
+The **`xBr`** parameter breaks of a numeric `x` variable. Single integer value determines number of breaks.  
+ 
+<br>
+
+##### xBrMethod
+
+The **`xBrMethod`** parameter defines the split methods and it works in conjunction with the `xBr` setting. The following split methods can be used:
+**`median`** (breaks `x` variable with `median`), **`mean`** (breaks `x` variables with `mean`), **`yieldHeat`** (corresponds to `xBr=c("seq(min,median,length.out=brValue)","max")`, where `brValue` is the value specified by `xBr`), **`linear`** (breaks `x` variable into equidistant intervals; number of splits is given by `xBr`). The following call uses the `linear` option as the `xBrMethod`: 
+
+
+```{r}
+# Plot PARAM10 versus PARAM18 box plot with 'linear' option as the xBrMethod
+boxPlot(pcy, PARAM10, PARAM18, xBr=7, xBrMethod="linear", z="center", zLevel=c(0,1))
+```
+
+<br>
+
+##### Date type `x` variable
+
+Now let us show how to the use the `xBr` parameter specified as POSIXct class to demonstrate date type `x` variable.
+
+```{r}
+boxPlotPar(legend.pos="topleft")
+# Define date type x variable
+boxPlot(pcy, pcStartDate, PARAM10, 
+  xBr=as.POSIXct(c("2015/10/01", "2016/06/01", "2016/08/01", "2016/10/01")), 
+                                                     z="center", zLevel=c(0,1))
+```
+
+<br>
+
+##### xLevel 
+
+Categorical `x`- axis can be broken into intervals using the **`xLevel`** parameter (*note*: In order to *include all levels*, use special value `xLevel="all"`). For a categorical `x`- axis, the `xLevel` parameter is non-null. It specifies which categories to use for split.
+
+
+```{r}
+# Select categorical z variable with input by name and define x-axis breaking intervals
+boxPlot(pcy, wafer, PARAM10, xLevel=c(1:10),  z="center", zLevel="all") 
+
+```
+
+
+
+<br> 
+
+Next, we will show two options for layout tuning.
+
+<br>
+
+##### main
+
+The main title can be added via the **`main`** parameter.
+
+```{r eval=FALSE}
+# Add graph title
+boxPlot(pcy, PARAM10, PARAM18, z="center", zLevel=c(0,1), 
+        main="Center pattern generated at low PARAM10", showLegend=T)
+```
+<br>
+
+##### showLegend
+
+
+To disable the displaying of the legend, set the **`showLegend`** parameter to `FALSE`.
+
+
+```{r}
+# Add title and hide legend
+boxPlot(pcy, PARAM10, PARAM18, z="center", 
+  zLevel=c(0,1), main="Center pattern generated at low PARAM10", showLegend=F)
+```
+
+
+<br>
+
+#### Visualization of the model output        
+
+The limits identified by the CART model could be verified in the box plot. For more details regarding the CART model see the [CART vignette](CART.html).  
+
+In this example, we use the value of 2 to balance the train set and select cluster `clear` for negative case sampling.  
+
+```{r results="hide"}
+ # Train CART classification on balanced data
+pcyb <- model(pcy, type="class", model="cart", formula="center ~ .", cp=0.11, balance=3, 
+                                                              balanceCol="clear", seed=42)  
+```
+
+Model visualizations with the use of the `modelPlot` function:
+
+```{r}
+modelPlot(pcyb, varlen=0, main="CART, cluster, classification, prune, balanced", 
+                                                                        extra=108)      
+``` 
+
+<br> 
+
+In our analysis, we are working with wafers in the `center` cluster and we are randomly sampling twice the amount of the wafers from the cluster `clear` for balancing. In case of repeating the balancing process, random sampling will vary.  
+
+To ensure that we use for the box plot same balanced data as for the model, we will store the selected wafers in the `usedRow` variable using the `modelTrainRow` function. The `usedRow` variable will now contain all the wafers with the `center` cluster and samples from the cluster `clear`.    
+
+```{r}
+usedRow <- modelTrainRow(pcyb)
+```
+
+Since we have stored all the wafers in the `center` cluster and samples from cluster `clear` in the `usedRow` variable, the `boxPlot` can be called on `pcyb[usedRow]` subset so that only the data used in the model is displayed. The CART limits are added using `abline` function, a red horizontal line at the value of 1713.  
+
+
+```{r}
+ # Select categorical z variable with input by name for all levels
+ boxPlot(pcyb[usedRow], PARAM15, PARAM10, z="center", zLevel="all", numMain=F)
+# add CART limit - red line
+abline(h=1713, col="red", lty=3)    
+```
+
+<br>
+
+### 2. Box plot visual parameters - `boxPlotPar` {#section2}  
+
+The **`boxPlotPar`** function enables to get, set and reload default visual parameters of the `boxPlot`. For a detailed list of all parameters that are available, see `?boxPlotPar`. Use parameter names to get values, use assignment to set parameter values and use keyword `default` to load default values. Let us look at some of the most used parameters and their usage. In order to see the effect on the `boxPlot`, the `boxPlotPar` needs to be run before the `boxPlot` is plotted. 
+
+
+<br>
+
+##### boxWex
+
+To get the value of a visual parameter, in our case relative width of the boxes, use: 
+
+```{r}
+# Get relative width of the boxes
+boxPlotPar(boxWex)
+```
+
+<br>
+
+##### legend.pos
+
+The *legend position* is accessible via the **`legend.pos`** parameter. In the call below, the legend position is set to bottom right: 
+
+```{r}
+# Set legend position to bottom right     
+boxPlotPar(legend.pos="bottomright")
+boxPlot(pcy, siteid, 20, xLevel="all",  z="PARAM10", zBr=5) 
+```
+
+```{r echo=FALSE}
+boxPlotPar(default)
+```
+
+<br> 
+
+##### colors.zLevel
+
+*Color scheme* for categorical variables can be tuned via the **`colors.zLevel`** parameter. Please refer to [color palette](https://colorbrewer2.org/#type=qualitative&scheme=Set3&n=12) for more details on color specification.  
+
+```{r}
+# Set color scheme to user defined values
+boxPlotPar(colors.zLevel=c("#8dd3c7","#fdb462"), legend.pos="topleft")
+boxPlot(pcy, PARAM10, PARAM18, z="center", zLevel=c(0,1), outlier=3, numMain=F)
+```
+
+```{r echo=FALSE}
+boxPlotPar(default)
+```
+
+<br> 
+
+##### varWidth
+
+
+Parameter **`varWidth`** represents the variable width of boxes proportional to the
+square-roots of the number of observations in the groups.  
+
+```{r}
+# Set the variable box width  
+boxPlotPar(varWidth=TRUE, legend.pos="topleft")
+boxPlot(pcy, PARAM10, PARAM18, z="center", zLevel=c(0,1), outlier=3, numMain=F)
+```
+
+<br> 
+
+In case that we have changed the visual parameters and we want to reload the default settings, the following call can be applied: 
+
+```{r}
+# Reload default visual parameters
+boxPlotPar(default) 
+```
+
+
+
+
